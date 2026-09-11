@@ -1,5 +1,5 @@
 // Dev-only loader: inserts the verified 42 workbook rows (see
-// docs/workbook-analysis.md) as `needs_review` loans so Records/Overview
+// docs/workbook-analysis.md) as active loans so Records/Overview
 // have real data to render against in this pass, without building the
 // phase-4 import wizard. NEVER run against production -- this bypasses
 // RLS with the service role key and does not go through record_payment/
@@ -105,23 +105,31 @@ async function main() {
       borrowerId = borrower.id
     }
 
+    const principalCentavos = Math.round(Number(grid[`F${row}`]) * 100)
+    const borrowedOn = excelSerialToIso(grid[`C${row}`])
+
     const { error: loanError } = await supabase.from('loans').insert({
       owner_id: ARAWAN_OWNER_ID,
       borrower_id: borrowerId,
       source_sequence: Number(grid[`A${row}`]),
-      principal_centavos: Math.round(Number(grid[`F${row}`]) * 100),
+      principal_centavos: principalCentavos,
       daily_due_centavos: Math.round(Number(grid[`G${row}`]) * 100),
-      borrowed_on: excelSerialToIso(grid[`C${row}`]),
-      payment_start_on: excelSerialToIso(grid[`D${row}`]),
+      interest_mode: 'none',
+      interest_centavos: 0,
+      total_payable_centavos: principalCentavos,
+      borrowed_on: borrowedOn,
+      payment_start_on: borrowedOn,
+      due_on: '2099-12-31',
       legacy_completed_on: excelSerialToIso(grid[`E${row}`]),
       legacy_percent_value: Math.round(Number(grid[`H${row}`]) * 100),
-      readiness: 'needs_review', // meaning of "%" and DATE COMPLETED is deferred -- spec §2, docs/workbook-analysis.md
+      readiness: 'ready',
+      archived_at: null,
     })
     if (loanError) throw loanError
     inserted++
   }
 
-  console.log(`Seeded ${inserted} needs_review loans from ${xlsxPath}.`)
+  console.log(`Seeded ${inserted} active loans from ${xlsxPath}.`)
 }
 
 main().catch((err) => {

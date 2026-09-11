@@ -53,20 +53,7 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
 
   const sixMonthChart = buildSixMonthChart(netPayments, sixMonthsAgo)
 
-  const loanById = new Map(activeLoans.map((l) => [l.id, l]))
-  const recentActivity: OverviewResponse['recentActivity'] = (payments ?? [])
-    .slice()
-    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
-    .slice(0, 10)
-    .map((p) => ({
-      id: p.id,
-      loanId: p.loan_id,
-      borrowerDisplayName: loanById.get(p.loan_id)?.borrower_display_name ?? 'Unknown borrower',
-      kind: p.kind,
-      amountCentavos: p.amount_centavos,
-      paidOn: p.paid_on,
-      createdAt: p.created_at,
-    }))
+  const recentActivity: OverviewResponse['recentActivity'] = []
 
   return {
     principalRecordedCentavos,
