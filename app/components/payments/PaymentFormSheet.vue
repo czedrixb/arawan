@@ -11,8 +11,9 @@
         </p>
       </div>
       <div>
-        <label class="mb-1 block text-sm text-text-secondary">Amount (₱)</label>
+        <label for="payment-amount" class="mb-1 block text-sm text-text-secondary">Amount (₱)</label>
         <input
+          id="payment-amount"
           v-model="amount.text.value"
           type="text"
           inputmode="decimal"
@@ -24,12 +25,12 @@
         <p v-if="amount.error.value" class="mt-1 text-xs text-danger-fg">{{ amount.error.value }}</p>
       </div>
       <div>
-        <label class="mb-1 block text-sm text-text-secondary">Date</label>
-        <input v-model="paidOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
+        <label for="payment-date" class="mb-1 block text-sm text-text-secondary">Date</label>
+        <input id="payment-date" v-model="paidOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
       </div>
       <div>
-        <label class="mb-1 block text-sm text-text-secondary">Note (optional)</label>
-        <input v-model="note" type="text" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
+        <label for="payment-note" class="mb-1 block text-sm text-text-secondary">Note (optional)</label>
+        <input id="payment-note" v-model="note" type="text" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
       </div>
       <p v-if="submitError" role="alert" class="text-sm text-danger-fg">{{ submitError }}</p>
       <p v-if="success" role="status" class="text-sm text-success-fg">Payment saved.</p>

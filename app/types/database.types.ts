@@ -635,8 +635,8 @@ export type Database = {
           p_amount_centavos: number
           p_idempotency_key: string
           p_loan_id: string
-          p_method: string
-          p_note: string
+          p_method?: string
+          p_note?: string
           p_paid_on: string
         }
         Returns: {

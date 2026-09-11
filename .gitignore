@@ -15,6 +15,7 @@ node_modules/
 /test-results/
 /playwright-report/
 /tests/e2e/.auth/
+/.playwright-browsers/
 
 # Misc
 *.log

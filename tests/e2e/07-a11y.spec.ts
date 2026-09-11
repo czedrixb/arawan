@@ -38,7 +38,10 @@ test.describe('authenticated a11y', () => {
   test('search finds an accented borrower name by its unaccented spelling', async ({ page }) => {
     await page.goto('/records')
     await page.getByPlaceholder('Search records').fill('serdena')
-    await page.waitForTimeout(400)
+    // 250ms debounce (spec §2) + a real network round trip now that
+    // refreshes/watched refetches actually hit the network -- give it
+    // more margin than the debounce alone before checking either outcome.
+    await page.waitForTimeout(900)
     const emptyState = page.getByText('No records match these filters.')
     if (await emptyState.isVisible().catch(() => false)) {
       test.skip(true, 'workbook not seeded in this environment -- see scripts/seed-workbook.mjs')

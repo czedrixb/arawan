@@ -43,7 +43,11 @@ function cancel() {
   editing.value = false
 }
 async function save() {
-  if (!editing.value) return
+  // Enter triggers @keydown.enter AND the blur it causes triggers
+  // @blur -- both call save(). Without this guard both fire the same
+  // PATCH concurrently with the same (pre-edit) version; the loser gets
+  // a 409 and the rename appears to silently fail depending on timing.
+  if (!editing.value || saveState.value === 'saving') return
   if (value.value.trim() === props.loan.borrower_display_name) {
     editing.value = false
     return

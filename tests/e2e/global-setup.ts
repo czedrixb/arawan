@@ -11,7 +11,7 @@ const STORAGE_STATE_PATH = './tests/e2e/.auth/storage-state.json'
 
 export default async function globalSetup(config: FullConfig) {
   mkdirSync('./tests/e2e/.auth', { recursive: true })
-  const baseURL = config.projects[0]?.use?.baseURL ?? 'http://localhost:3211'
+  const baseURL = config.projects[0]?.use?.baseURL ?? 'http://localhost:4287'
   const email = process.env.ARAWAN_OWNER_EMAIL
   const password = process.env.ARAWAN_OWNER_PASSWORD
 

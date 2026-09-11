@@ -37,8 +37,8 @@
 
       <section class="rounded-card border border-border bg-surface p-4 shadow-card">
         <h2 class="mb-3 text-sm font-semibold text-text-primary">Appearance</h2>
-        <label class="mb-1 block text-sm text-text-secondary">Motion</label>
-        <select v-model="motionSetting" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @change="setMotion(motionSetting)">
+        <label for="motion-preference" class="mb-1 block text-sm text-text-secondary">Motion</label>
+        <select id="motion-preference" v-model="motionSetting" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @change="setMotion(motionSetting)">
           <option value="system">Match system</option>
           <option value="on">Reduce motion</option>
           <option value="off">Full motion</option>

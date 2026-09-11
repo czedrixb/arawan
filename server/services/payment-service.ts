@@ -35,14 +35,20 @@ export async function listPayments(
 }
 
 export async function recordPayment(event: H3Event, client: SupabaseClient, loanId: string, input: RecordPaymentInput): Promise<LoanSummary> {
-  return callRpc<LoanSummary>(event, client, 'record_payment', {
+  // PostgREST can't infer a type for a JSON `null` against an RPC's named
+  // parameter and fails the whole call with 42883 (undefined_function) --
+  // confirmed against the real project. Omit optional keys entirely
+  // instead of sending null; the SQL-level DEFAULT NULL takes over
+  // (supabase/migrations/0008_optional_rpc_arg_defaults.sql).
+  const args: Record<string, unknown> = {
     p_loan_id: loanId,
     p_amount_centavos: input.amountCentavos,
     p_paid_on: input.paidOn,
-    p_method: input.method ?? null,
-    p_note: input.note ?? null,
     p_idempotency_key: input.idempotencyKey,
-  })
+  }
+  if (input.method) args.p_method = input.method
+  if (input.note) args.p_note = input.note
+  return callRpc<LoanSummary>(event, client, 'record_payment', args)
 }
 
 export async function reversePayment(event: H3Event, client: SupabaseClient, paymentId: string, input: ReversePaymentInput): Promise<LoanSummary> {

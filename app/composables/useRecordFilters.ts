@@ -8,6 +8,17 @@ export function useRecordFilters() {
   const route = useRoute()
   const router = useRouter()
 
+  // Vue Router hands out a fresh route.query object on every navigation,
+  // even when revisiting the identical URL -- a naive computed() would
+  // then return a NEW object reference each time too, and useFetch's
+  // built-in query-watching (reactive params are watched by default,
+  // independent of any `watch` array passed in) treats that reference
+  // change as "the query changed", refetching on every Back navigation
+  // even though nothing did (breaks the "zero refetch" guarantee in
+  // docs/performance.md). Memoize by serialized content so the SAME
+  // object is returned when nothing actually changed.
+  let lastSerialized = ''
+  let lastResult: Partial<LoanFilters> = { status: 'all', archived: 'exclude', sort: 'borrowed_desc', page: 1, pageSize: 25 }
   const filters = computed<Partial<LoanFilters>>(() => {
     const parsed = loanFiltersSchema.safeParse({
       ...route.query,
@@ -16,7 +27,13 @@ export function useRecordFilters() {
       page: route.query.page ? Number(route.query.page) : undefined,
       pageSize: route.query.pageSize ? Number(route.query.pageSize) : undefined,
     })
-    return parsed.success ? parsed.data : { status: 'all', archived: 'exclude', sort: 'borrowed_desc', page: 1, pageSize: 25 }
+    const next = parsed.success ? parsed.data : lastResult
+    const serialized = JSON.stringify(next)
+    if (serialized !== lastSerialized) {
+      lastSerialized = serialized
+      lastResult = next
+    }
+    return lastResult
   })
 
   function update(patch: Partial<LoanFilters>) {

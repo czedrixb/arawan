@@ -6,8 +6,9 @@
         zero is valid -- leaving it unset keeps the balance unknown.
       </p>
       <div>
-        <label class="mb-1 block text-sm text-text-secondary">Collected so far (₱)</label>
+        <label for="opening-collected" class="mb-1 block text-sm text-text-secondary">Collected so far (₱)</label>
         <input
+          id="opening-collected"
           v-model="collected.text.value"
           type="text"
           inputmode="decimal"
@@ -18,12 +19,12 @@
         />
       </div>
       <div>
-        <label class="mb-1 block text-sm text-text-secondary">As of</label>
-        <input v-model="asOf" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
+        <label for="opening-as-of" class="mb-1 block text-sm text-text-secondary">As of</label>
+        <input id="opening-as-of" v-model="asOf" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
       </div>
       <div>
-        <label class="mb-1 block text-sm text-text-secondary">Reason / note</label>
-        <input v-model="reason" type="text" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" placeholder="e.g. migrated from workbook" />
+        <label for="opening-reason" class="mb-1 block text-sm text-text-secondary">Reason / note</label>
+        <input id="opening-reason" v-model="reason" type="text" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" placeholder="e.g. migrated from workbook" />
       </div>
       <p v-if="submitError" role="alert" class="text-sm text-danger-fg">{{ submitError }}</p>
     </form>

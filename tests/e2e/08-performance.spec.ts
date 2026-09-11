@@ -10,7 +10,10 @@ test('Records -> detail -> Back performs zero list refetches on the Back leg', a
   await page.goto('/records')
   await page.waitForLoadState('networkidle')
 
-  const rows = page.locator('a[href^="/records/"]')
+  // Both the mobile list and the desktop table render a[href^="/records/"]
+  // links; only one is actually visible per viewport (the other is
+  // display:none via a `lg:` breakpoint), so scope to :visible explicitly.
+  const rows = page.locator('a[href^="/records/"]:visible')
   await expect(rows.first()).toBeVisible()
 
   let listRequests = 0

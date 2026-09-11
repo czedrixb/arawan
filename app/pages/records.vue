@@ -22,7 +22,7 @@
       <button type="button" class="press flex items-center gap-1 rounded-control border border-control-border px-3 py-2.5 text-sm" @click="filterOpen = true">
         Filter <span v-if="activeFilterCount">({{ activeFilterCount }})</span>
       </button>
-      <button type="button" class="press hidden rounded-control bg-primary px-4 py-2.5 text-sm font-semibold text-white lg:hidden" @click="addOpen = true">+ Add</button>
+      <button type="button" class="press rounded-control bg-primary px-4 py-2.5 text-sm font-semibold text-white lg:hidden" @click="addOpen = true">+ Add</button>
     </div>
 
     <div class="mt-3 flex gap-2 px-4 lg:hidden">
@@ -42,7 +42,18 @@
       <AppSkeleton v-if="pending && !data" variant="list" :rows="6" />
       <ErrorState v-else-if="error" @retry="refresh()" />
       <template v-else-if="data">
-        <EmptyState v-if="data.rows.length === 0" message="No loans yet. Add your first loan or import your ARAWAN file." action-label="Add loan" @action="addOpen = true" />
+        <EmptyState
+          v-if="data.rows.length === 0 && hasActiveSearchOrFilter"
+          message="No records match these filters."
+          action-label="Clear filters"
+          @action="clearFilters"
+        />
+        <EmptyState
+          v-else-if="data.rows.length === 0"
+          message="No loans yet. Add your first loan or import your ARAWAN file."
+          action-label="Add loan"
+          @action="addOpen = true"
+        />
         <template v-else>
           <ul class="overflow-hidden rounded-card border border-border lg:hidden">
             <LoanListItem v-for="loan in data.rows" :key="loan.id" :loan="loan" @more="onMore" @record-payment="onRecordPaymentFor" />
@@ -91,6 +102,16 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined
 function onSearchInput() {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(() => update({ q: searchInput.value || undefined }), 250)
+}
+
+// Spec §6: "Empty search result retains the query and offers Clear
+// filters" -- a zero-result search/filter gets its own distinct empty
+// state from a genuinely empty account, and only an explicit Clear
+// action resets it (never auto-cleared).
+const hasActiveSearchOrFilter = computed(() => !!filters.value.q || activeFilterCount.value > 0)
+function clearFilters() {
+  searchInput.value = ''
+  update({ q: undefined, status: 'all', archived: 'exclude', borrowedFrom: undefined, borrowedTo: undefined, balanceMin: undefined, balanceMax: undefined })
 }
 
 const filterOpen = ref(false)

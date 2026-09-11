@@ -46,12 +46,12 @@
         <h3 class="mb-2 text-sm font-semibold text-text-primary">Loan details</h3>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="mb-1 block text-sm text-text-secondary">Principal (₱)</label>
-            <input v-model="principal.text.value" type="text" inputmode="decimal" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="principal.onInput(($event.target as HTMLInputElement).value)" @blur="principal.onBlur" />
+            <label for="loan-principal" class="mb-1 block text-sm text-text-secondary">Principal (₱)</label>
+            <input id="loan-principal" v-model="principal.text.value" type="text" inputmode="decimal" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="principal.onInput(($event.target as HTMLInputElement).value)" @blur="principal.onBlur" />
           </div>
           <div>
-            <label class="mb-1 block text-sm text-text-secondary">Daily due (₱)</label>
-            <input v-model="daily.text.value" type="text" inputmode="decimal" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="daily.onInput(($event.target as HTMLInputElement).value)" @blur="daily.onBlur" />
+            <label for="loan-daily-due" class="mb-1 block text-sm text-text-secondary">Daily due (₱)</label>
+            <input id="loan-daily-due" v-model="daily.text.value" type="text" inputmode="decimal" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="daily.onInput(($event.target as HTMLInputElement).value)" @blur="daily.onBlur" />
           </div>
         </div>
 
@@ -63,8 +63,8 @@
           </label>
         </div>
         <div v-if="interestMode === 'added'" class="mt-2">
-          <label class="mb-1 block text-sm text-text-secondary">Fixed interest (₱)</label>
-          <input v-model="interest.text.value" type="text" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="interest.onInput(($event.target as HTMLInputElement).value)" @blur="interest.onBlur" />
+          <label for="loan-interest" class="mb-1 block text-sm text-text-secondary">Fixed interest (₱)</label>
+          <input id="loan-interest" v-model="interest.text.value" type="text" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="interest.onInput(($event.target as HTMLInputElement).value)" @blur="interest.onBlur" />
         </div>
       </section>
 
@@ -73,12 +73,12 @@
         <h3 class="mb-2 text-sm font-semibold text-text-primary">Dates</h3>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="mb-1 block text-sm text-text-secondary">Borrowed on</label>
-            <input v-model="borrowedOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
+            <label for="loan-borrowed-on" class="mb-1 block text-sm text-text-secondary">Borrowed on</label>
+            <input id="loan-borrowed-on" v-model="borrowedOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
           </div>
           <div>
-            <label class="mb-1 block text-sm text-text-secondary">Payment start</label>
-            <input v-model="paymentStartOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
+            <label for="loan-payment-start" class="mb-1 block text-sm text-text-secondary">Payment start</label>
+            <input id="loan-payment-start" v-model="paymentStartOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
           </div>
         </div>
         <label class="mb-1 mt-3 block text-sm text-text-secondary">Collection days</label>
@@ -95,8 +95,8 @@
           </button>
         </div>
         <div class="mt-3">
-          <label class="mb-1 block text-sm text-text-secondary">Due date</label>
-          <input v-model="dueOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="dueOnTouched = true" />
+          <label for="loan-due-on" class="mb-1 block text-sm text-text-secondary">Due date</label>
+          <input id="loan-due-on" v-model="dueOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="dueOnTouched = true" />
         </div>
       </section>
 

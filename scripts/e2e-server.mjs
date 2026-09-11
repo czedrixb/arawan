@@ -6,7 +6,7 @@
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 
-const PORT = 3211
+const PORT = 4287
 
 function run(cmd, args) {
   return new Promise((resolve, reject) => {
