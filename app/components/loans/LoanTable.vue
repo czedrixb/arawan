@@ -3,18 +3,25 @@
     <table class="w-full min-w-[760px] text-sm">
       <thead class="bg-surface-subtle text-left text-xs text-text-secondary">
         <tr>
-          <th v-for="col in columns" :key="col.key" scope="col" class="px-4 py-3 font-medium">
+          <th
+            v-for="col in columns"
+            :key="col.key"
+            scope="col"
+            class="px-4 py-3 font-medium"
+            :class="col.numeric ? 'text-right' : ''"
+          >
             <button
               v-if="col.sort"
               type="button"
               class="press flex items-center gap-1"
+              :class="col.numeric ? 'w-full justify-end' : ''"
               :aria-sort="ariaSortFor(col.sort)"
               @click="$emit('sort', col.sort)"
             >
               {{ col.label }}
               <PhCaretUpDown :size="12" />
             </button>
-            <span v-else>{{ col.label }}</span>
+            <span v-else :class="col.numeric ? 'block text-right' : ''">{{ col.label }}</span>
           </th>
           <th scope="col" class="px-4 py-3" />
         </tr>
@@ -55,9 +62,9 @@ defineEmits<{ sort: [LoanFilters['sort']]; more: [loan: any] }>()
 const columns = [
   { key: 'name', label: 'Name', sort: 'name_asc' as const },
   { key: 'borrowed', label: 'Borrowed', sort: undefined },
-  { key: 'amount', label: 'Amount', sort: undefined },
-  { key: 'daily', label: 'Daily', sort: undefined },
-  { key: 'remaining', label: 'Remaining', sort: 'remaining_desc' as const },
+  { key: 'amount', label: 'Amount', sort: undefined, numeric: true },
+  { key: 'daily', label: 'Daily', sort: undefined, numeric: true },
+  { key: 'remaining', label: 'Remaining', sort: 'remaining_desc' as const, numeric: true },
   { key: 'status', label: 'Status', sort: undefined },
 ]
 
