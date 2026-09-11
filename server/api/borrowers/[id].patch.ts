@@ -1,4 +1,7 @@
 import { borrowerPatchSchema } from '#shared/schemas/borrower'
+import type { Database } from '~/types/database.types'
+
+type BorrowerUpdate = Database['public']['Tables']['borrowers']['Update']
 
 export default defineEventHandler(async (event) => {
   requireSameOrigin(event)
@@ -6,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')!
   const patch = validateInput(event, borrowerPatchSchema, await readBody(event))
 
-  const update: Record<string, unknown> = {}
+  const update: BorrowerUpdate = {}
   if (patch.displayName !== undefined) {
     update.display_name = patch.displayName
     update.normalized_name = normalizeName(patch.displayName)

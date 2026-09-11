@@ -5,17 +5,12 @@
 // so RLS applies -- the app never accepts or trusts a client-sent owner_id.
 import type { H3Event } from 'h3'
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import type { Database } from '~/types/database.types'
 
-// Not parameterized with the generated Database type yet -- until
-// `supabase gen types` runs against the real linked project,
-// app/types/database.types.ts is a `Database = unknown` stub, and
-// passing that through SupabaseClient<Database> degrades every table to
-// `never` rather than leaving them usefully untyped. Swap this back to
-// `serverSupabaseClient<Database>(event)` once real types are generated.
 export async function requireOwner(event: H3Event) {
   const user = await serverSupabaseUser(event)
   if (!user) unauthorized(event)
-  const client = await serverSupabaseClient(event)
+  const client = await serverSupabaseClient<Database>(event)
   return { user, client }
 }
 

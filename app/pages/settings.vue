@@ -106,10 +106,7 @@ function toggleDefaultWeekday(day: number) {
     : [...defaultWeekdays.value, day].sort()
 }
 async function saveDefaults() {
-  // `Database` is a stub (app/types/database.types.ts) until `supabase gen
-  // types` runs against the linked project, which makes typed-client
-  // writes resolve to `never`; cast until real types are generated.
-  await client.from('profiles').update({ default_collection_weekdays: defaultWeekdays.value } as never).eq('id', user.value!.id)
+  await client.from('profiles').update({ default_collection_weekdays: defaultWeekdays.value }).eq('id', user.value!.id)
   useToast().show('Defaults saved')
 }
 
