@@ -1,0 +1,22 @@
+# Nuxt / Nitro
+.nuxt/
+.output/
+.data/
+
+# Node
+node_modules/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Playwright
+/test-results/
+/playwright-report/
+/tests/e2e/.auth/
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db

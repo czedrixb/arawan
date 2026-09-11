@@ -1,0 +1,37 @@
+{
+  "name": "arawan",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "db:push": "supabase db push",
+    "seed:workbook": "tsx --env-file=.env scripts/seed-workbook.mjs",
+    "generate:brand": "node scripts/generate-brand-assets.mjs",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@nuxtjs/supabase": "^2.0.10",
+    "@phosphor-icons/vue": "^2.2.1",
+    "@supabase/supabase-js": "^2.116.0",
+    "@vite-pwa/nuxt": "^1.1.1",
+    "nuxt": "^4.5.2",
+    "reka-ui": "^2.10.4",
+    "vue": "^3.5.42",
+    "vue-router": "^4.6.4",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^22.20.2",
+    "sharp": "^0.35.4",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.3.11"
+  }
+}

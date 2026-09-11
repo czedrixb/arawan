@@ -1,0 +1,138 @@
+@import 'tailwindcss';
+
+/*
+ * ARAWAN-implementation-plan.md §4 design tokens, as a single Tailwind 4
+ * @theme block. Every color/radius/shadow/motion value below traces to a
+ * row in that table -- do not add ad-hoc colors elsewhere.
+ */
+@theme {
+  --color-canvas: #f7f8f5;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f0f3ef;
+  --color-border: #e2e7e0;
+  --color-control-border: #7e8b80;
+  --color-text-primary: #18221b;
+  --color-text-secondary: #59665c;
+  --color-primary: #237a45;
+  --color-primary-pressed: #185c33;
+  --color-accent-soft: #e6f3e9;
+  --color-accent-chart: #83be91;
+  --color-success-fg: #196437;
+  --color-success-bg: #e4f3e8;
+  --color-warning-fg: #855000;
+  --color-warning-bg: #fff1d8;
+  --color-danger-fg: #a52a2a;
+  --color-danger-bg: #fde9e7;
+  --color-focus: #155e36;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-sheet: 24px;
+
+  --shadow-card: 0 1px 2px rgb(24 34 27 / 4%);
+  --shadow-overlay: 0 16px 48px rgb(24 34 27 / 14%);
+
+  --spacing-gutter-mobile: 16px;
+  --spacing-gutter-tablet: 24px;
+  --spacing-gutter-desktop: 32px;
+
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-press: 120ms;
+  --dur-fade: 180ms;
+  --dur-sheet: 280ms;
+}
+
+@layer base {
+  html {
+    background: var(--color-canvas);
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+
+  /* Spec §3: money is right-aligned with tabular numerals wherever it renders. */
+  .tabular-money {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Spec §4 motion budget: 100-140ms press feedback, opacity/transform only. */
+  .press {
+    transition: transform var(--dur-press) var(--ease-standard);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity var(--dur-fade) var(--ease-standard);
+  }
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+
+  .sheet-enter-active,
+  .sheet-leave-active {
+    transition: transform var(--dur-sheet) var(--ease-standard), opacity var(--dur-sheet) var(--ease-standard);
+  }
+  .sheet-enter-from,
+  .sheet-leave-to {
+    transform: translateY(100%);
+    opacity: 0.4;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-surface-subtle) 25%, var(--color-border) 37%, var(--color-surface-subtle) 63%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: var(--radius-control);
+  }
+
+  /* Spec §13: every animated affordance above must still be usable at rest. */
+  @media (prefers-reduced-motion: reduce) {
+    .press,
+    .fade-enter-active,
+    .fade-leave-active,
+    .sheet-enter-active,
+    .sheet-leave-active,
+    .skeleton {
+      transition: none !important;
+      animation: none !important;
+    }
+    .press:active {
+      transform: none;
+    }
+  }
+}
