@@ -8,10 +8,17 @@ import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 import type { Database } from '~/types/database.types'
 
 export async function requireOwner(event: H3Event) {
-  const user = await serverSupabaseUser(event)
-  if (!user) unauthorized(event)
+  const rawUser = await serverSupabaseUser(event)
+  if (!rawUser) unauthorized(event)
   const client = await serverSupabaseClient<Database>(event)
-  return { user, client }
+  // On this @nuxtjs/supabase version, serverSupabaseUser() returns the
+  // decoded JWT claims (subject id in `sub`) rather than the full
+  // Supabase `User` object (id in `id`) its own type declares -- confirmed
+  // by logging the raw value against a real signed-in session. Normalize
+  // once here so every route can keep reading `user.id`.
+  const id = (rawUser as { id?: string; sub?: string }).id ?? (rawUser as { sub?: string }).sub
+  if (!id) unauthorized(event)
+  return { user: { ...rawUser, id }, client }
 }
 
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE'])

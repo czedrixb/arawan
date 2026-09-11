@@ -3,7 +3,7 @@ import { hasSession } from './helpers'
 
 test.skip(!hasSession(), 'requires a captured session from global-setup.ts')
 
-test('partial payment, over-payment rejection, and reversal reopening', async ({ page, request }) => {
+test('partial payment, over-payment rejection, and reversal reopening', async ({ page, request }, testInfo) => {
   // Seed a small loan directly through the API so this test doesn't
   // depend on 03-loans having run first.
   const created = await request.post('/api/loans', {
@@ -23,13 +23,16 @@ test('partial payment, over-payment rejection, and reversal reopening', async ({
   const loan = await created.json()
 
   await page.goto(`/records/${loan.id}`)
-  await page.getByRole('button', { name: 'Record payment' }).click()
+  await page.getByTestId('loan-detail-record-payment').click()
   await page.getByLabel('Amount (₱)').fill('50.00')
   await page.getByRole('button', { name: 'Save payment' }).click()
-  await expect(page.getByText('Payment saved')).toBeVisible()
+  // ToastHost's "Payment saved" and the sheet's own inline "Payment
+  // saved." status text both match a non-exact getByText -- pin to the
+  // toast specifically.
+  await expect(page.getByText('Payment saved', { exact: true })).toBeVisible()
 
   // Over-payment beyond the remaining balance is rejected.
-  await page.getByRole('button', { name: 'Record payment' }).click()
+  await page.getByTestId('loan-detail-record-payment').click()
   await page.getByLabel('Amount (₱)').fill('999999')
   await page.getByRole('button', { name: 'Save payment' }).click()
   await expect(page.getByText(/exceeds/i)).toBeVisible()
@@ -42,4 +45,5 @@ test('partial payment, over-payment rejection, and reversal reopening', async ({
   await page.getByRole('button', { name: 'Reverse payment' }).click()
   await expect(page.getByText('Payment reversed')).toBeVisible()
   await expect(page.getByText('(reversed)')).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('payment-reversed.png'), fullPage: true })
 })

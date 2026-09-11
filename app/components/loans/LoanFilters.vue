@@ -33,12 +33,12 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="mb-1 block text-sm text-text-secondary">Borrowed from</label>
-          <input v-model="local.borrowedFrom" type="date" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
+          <label for="filter-borrowed-from" class="mb-1 block text-sm text-text-secondary">Borrowed from</label>
+          <input id="filter-borrowed-from" v-model="local.borrowedFrom" type="date" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
         </div>
         <div>
-          <label class="mb-1 block text-sm text-text-secondary">Borrowed to</label>
-          <input v-model="local.borrowedTo" type="date" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
+          <label for="filter-borrowed-to" class="mb-1 block text-sm text-text-secondary">Borrowed to</label>
+          <input id="filter-borrowed-to" v-model="local.borrowedTo" type="date" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
         </div>
       </div>
     </div>

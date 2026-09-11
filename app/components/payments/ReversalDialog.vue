@@ -7,8 +7,8 @@
   >
     <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
       <div>
-        <label class="mb-1 block text-sm text-text-secondary">Reason</label>
-        <input v-model="reason" type="text" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" placeholder="e.g. entered wrong amount" />
+        <label for="reversal-reason" class="mb-1 block text-sm text-text-secondary">Reason</label>
+        <input id="reversal-reason" v-model="reason" type="text" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" placeholder="e.g. entered wrong amount" />
       </div>
       <p v-if="submitError" role="alert" class="text-sm text-danger-fg">{{ submitError }}</p>
       <div class="flex justify-end gap-3">

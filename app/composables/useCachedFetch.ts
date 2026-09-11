@@ -13,7 +13,16 @@ export function useCachedFetch<T>(url: string | (() => string), opts: UseFetchOp
   const progress = useTopProgress()
   return useFetch(url, {
     ...opts,
-    getCachedData(key, nuxtApp) {
+    // Nuxt consults getCachedData on EVERY execute() call, including an
+    // explicit refresh()/refreshNuxtData() (cause: 'refresh:manual' /
+    // 'refresh:hook'), not just the first load -- returning a value
+    // unconditionally here made every such refresh a silent no-op: it
+    // resolved instantly with the OLD cached data and never touched the
+    // network. Confirmed against a real payment/reversal/rename each
+    // failing to show up until a full page reload. Only serve the cache
+    // on the initial mount; every explicit refresh must hit the network.
+    getCachedData(key, nuxtApp, ctx) {
+      if (ctx.cause !== 'initial') return undefined
       return (nuxtApp.payload.data[key] ?? nuxtApp.static.data[key]) as T | undefined
     },
     onRequest() {

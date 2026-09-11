@@ -2,10 +2,17 @@ import type { LoanFilters } from '#shared/schemas/loan'
 import type { LoanDetailResponse, LoanListResponse } from '#shared/types/api'
 
 export function useLoanList(filters: Ref<Partial<LoanFilters>>) {
+  // `filters` is a computed reading route.query, which Vue Router
+  // replaces with a new (content-identical) object on every navigation
+  // -- watching `filters` itself compares by reference and refetches on
+  // every revisit even when nothing actually changed, defeating the
+  // "Back performs zero refetches" guarantee (docs/performance.md).
+  // Watch the serialized string instead, which compares by value.
+  const filtersKey = computed(() => JSON.stringify(filters.value))
   return useCachedFetch<LoanListResponse>('/api/loans', {
     query: filters,
-    watch: [filters],
-    key: () => `loans:${JSON.stringify(filters.value)}`,
+    watch: [filtersKey],
+    key: () => `loans:${filtersKey.value}`,
   })
 }
 

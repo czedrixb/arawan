@@ -18,6 +18,14 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/supabase', '@vite-pwa/nuxt'],
 
+  // Every component in app/components/{shell,loans,payments,shared}/ is
+  // written and referenced by its bare filename (<PageHeader>, not
+  // <ShellPageHeader>). Without this, Nuxt's default directory-prefixed
+  // auto-import silently fails to resolve any of them -- confirmed via a
+  // real signed-in render where they came through as empty, unresolved
+  // custom elements with no console error (Vue only warns).
+  components: [{ path: '~/components', pathPrefix: false }],
+
   css: ['~/assets/css/tokens.css'],
 
   vite: {

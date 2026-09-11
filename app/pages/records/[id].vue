@@ -101,7 +101,12 @@
         </div>
 
         <div v-if="data.loan.remaining_centavos != null && data.loan.remaining_centavos > 0" class="safe-bottom border-t border-border px-5 py-4">
-          <button type="button" class="press w-full rounded-control bg-primary px-4 py-3 text-sm font-semibold text-white" @click="paymentOpen = true">
+          <button
+            type="button"
+            data-testid="loan-detail-record-payment"
+            class="press w-full rounded-control bg-primary px-4 py-3 text-sm font-semibold text-white"
+            @click="paymentOpen = true"
+          >
             Record payment
           </button>
         </div>

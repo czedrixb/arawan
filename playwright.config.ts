@@ -1,4 +1,11 @@
+import { existsSync } from 'node:fs'
 import { defineConfig, devices } from '@playwright/test'
+
+// scripts/e2e-server.mjs passes .env to the spawned app server, but this
+// config's own process (which runs global-setup.ts) never sees it
+// otherwise -- load it here too so ARAWAN_OWNER_EMAIL/PASSWORD are
+// visible when global-setup checks process.env.
+if (existsSync('.env')) process.loadEnvFile('.env')
 
 // Runs against a production build (spec §14): the service worker,
 // spaLoadingTemplate, and PWA manifest only exist in `.output/`, not in
@@ -11,7 +18,7 @@ export default defineConfig({
   globalSetup: './tests/e2e/global-setup.ts',
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:3211',
+    baseURL: 'http://localhost:4287',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -27,7 +34,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'node scripts/e2e-server.mjs',
-    url: 'http://localhost:3211/api/overview',
+    url: 'http://localhost:4287/api/overview',
     reuseExistingServer: false,
     timeout: 120_000,
   },

@@ -63,6 +63,7 @@ async function onSubmit() {
     error.value = 'Incorrect email or password.'
     return
   }
+  await waitForSupabaseUser()
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
   await navigateTo(redirect)
 }
