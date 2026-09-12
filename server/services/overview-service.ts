@@ -27,9 +27,7 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
 
   const principalRecordedCentavos = sum(activeLoans.map((l) => l.principal_centavos ?? 0))
   const interestRecordedCentavos = sum(activeLoans.map((l) => l.interest_centavos ?? 0))
-  const averageInterestRateBps = principalRecordedCentavos > 0
-    ? Math.round(interestRecordedCentavos / principalRecordedCentavos * 10_000)
-    : null
+  const totalPayableCentavos = sum(activeLoans.map((l) => l.total_payable_centavos ?? 0))
 
   const monthStart = monthStartIso(today)
   const collectedInPeriodCentavos = sum(
@@ -62,7 +60,7 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   return {
     principalRecordedCentavos,
     interestRecordedCentavos,
-    averageInterestRateBps,
+    totalPayableCentavos,
     collectedInPeriodCentavos,
     outstandingTodayCentavos,
     outstandingExcludedCount,

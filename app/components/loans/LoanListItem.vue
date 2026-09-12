@@ -10,24 +10,32 @@
       <NuxtLink :to="`/records/${loan.id}`" class="min-w-0 flex-1 px-4 py-3">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="truncate text-sm font-medium text-text-primary">{{ loan.borrower_display_name }}</p>
-            <p class="mt-0.5 text-xs text-text-secondary">{{ formatDateDisplay(loan.borrowed_on) }}</p>
+            <p class="truncate text-sm font-medium text-text-primary">{{ loan.source_sequence ?? '—' }}. {{ loan.borrower_display_name }}</p>
+            <p class="mt-0.5 text-xs text-text-secondary">Date Borrowed · {{ formatDateDisplay(loan.borrowed_on) }}</p>
           </div>
           <StatusPill :status="loan.display_status" />
         </div>
 
-        <div class="mt-3 grid grid-cols-3 gap-2">
+        <div class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
           <div class="min-w-0">
-            <p class="text-right text-[10px] font-medium uppercase tracking-wide text-text-secondary">Amount</p>
-            <p class="truncate text-right text-xs font-medium tabular-money text-text-primary"><MoneyText :centavos="loan.principal_centavos" /></p>
+            <p class="text-[10px] font-medium uppercase tracking-wide text-text-secondary">Payment Start</p>
+            <p class="truncate text-xs tabular-money text-text-primary">{{ formatDateDisplay(loan.payment_start_on) }}</p>
           </div>
           <div class="min-w-0">
-            <p class="text-right text-[10px] font-medium uppercase tracking-wide text-text-secondary">Interest %</p>
-            <p class="truncate text-right text-xs font-medium tabular-money text-text-primary">{{ formatInterestRate(loan.interest_centavos, loan.principal_centavos) }}</p>
+            <p class="text-[10px] font-medium uppercase tracking-wide text-text-secondary">Date Completed</p>
+            <p class="truncate text-xs tabular-money text-text-primary">{{ formatDateDisplay(loan.due_on) }}</p>
           </div>
           <div class="min-w-0">
-            <p class="text-right text-[10px] font-medium uppercase tracking-wide text-text-secondary">Daily</p>
-            <p class="truncate text-right text-xs font-medium tabular-money text-text-primary"><MoneyText :centavos="loan.daily_due_centavos" /></p>
+            <p class="text-[10px] font-medium uppercase tracking-wide text-text-secondary">Amount</p>
+            <p class="truncate text-xs tabular-money text-text-primary"><MoneyText :centavos="loan.principal_centavos" /></p>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] font-medium uppercase tracking-wide text-text-secondary">Daily</p>
+            <p class="truncate text-xs tabular-money text-text-primary"><MoneyText :centavos="loan.daily_due_centavos" /></p>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] font-medium uppercase tracking-wide text-text-secondary">Interest</p>
+            <p class="truncate text-xs tabular-money text-text-primary"><MoneyText :centavos="loan.interest_centavos" /></p>
           </div>
         </div>
       </NuxtLink>
@@ -38,6 +46,7 @@
     <!-- Swipe reveal -- mirrored exactly by the visible More menu, never the only way to reach these actions (spec §6). -->
     <div v-if="dragX < 0" class="absolute inset-y-0 right-0 flex items-stretch" :style="{ width: `${revealWidth}px` }">
       <button type="button" class="flex-1 bg-primary px-3 text-xs font-medium text-white" @click="onRecordPayment">Record payment</button>
+      <button type="button" class="flex-1 bg-accent-soft px-3 text-xs font-medium text-primary" @click="$emit('edit', loan)">Edit</button>
       <button type="button" class="flex-1 bg-surface-subtle px-3 text-xs font-medium text-text-primary" @click="$emit('more', loan)">More</button>
     </div>
   </li>
@@ -47,9 +56,9 @@
 import { PhDotsThreeVertical } from '@phosphor-icons/vue'
 
 const props = defineProps<{ loan: any }>()
-const emit = defineEmits<{ more: [loan: any]; 'record-payment': [loan: any] }>()
+const emit = defineEmits<{ more: [loan: any]; edit: [loan: any]; 'record-payment': [loan: any] }>()
 
-const revealWidth = 176
+const revealWidth = 264
 const dragX = ref(0)
 let startX = 0
 let startY = 0

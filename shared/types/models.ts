@@ -44,6 +44,7 @@ export interface LoanSummary {
   progress_pct: number | null
   completed_on: string | null
   display_status: DisplayStatus
+  financial_terms_locked?: boolean
 }
 
 export interface PaymentEntry {

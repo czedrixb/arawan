@@ -1,9 +1,5 @@
-// Dev-only loader: inserts the verified 42 workbook rows (see
-// docs/workbook-analysis.md) as active loans so Records/Overview
-// have real data to render against in this pass, without building the
-// phase-4 import wizard. NEVER run against production -- this bypasses
-// RLS with the service role key and does not go through record_payment/
-// commit_import at all.
+// Dev-only append loader for workbook rows. For replacing account data use
+// reset-workbook.mjs, which validates the workbook and commits atomically.
 //
 // Usage (service role):
 //   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... ARAWAN_OWNER_ID=... \
@@ -145,10 +141,10 @@ async function main() {
       total_payable_centavos: principalCentavos + interestCentavos,
       borrowed_on: borrowedOn,
       payment_start_on: borrowedOn,
-      due_on: '2099-12-31',
+      due_on: excelSerialToIso(grid[`E${row}`]),
       legacy_completed_on: excelSerialToIso(grid[`E${row}`]),
       legacy_percent_value: Math.round(Number(grid[`H${row}`]) * 100),
-      readiness: 'ready',
+      readiness: borrowedOn <= excelSerialToIso(grid[`D${row}`]) && excelSerialToIso(grid[`E${row}`]) <= '2030-01-01' ? 'ready' : 'needs_review',
       archived_at: null,
     })
     if (loanError) throw loanError

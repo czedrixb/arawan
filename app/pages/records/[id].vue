@@ -27,6 +27,9 @@
           <button type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="onArchiveToggle">
             {{ data.loan.archived_at ? 'Restore' : 'Archive' }}
           </button>
+          <button type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="editOpen = true">
+            Edit record
+          </button>
           <button v-if="data.loan.readiness === 'needs_review'" type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="openingOpen = true">
             Confirm opening balance
           </button>
@@ -56,7 +59,7 @@
               <dt class="text-text-secondary">Principal</dt>
               <dd class="text-right tabular-money"><MoneyText :centavos="data.loan.principal_centavos" /></dd>
               <dt class="text-text-secondary">Interest</dt>
-              <dd class="text-right tabular-money">{{ formatInterestRate(data.loan.interest_centavos, data.loan.principal_centavos) }}</dd>
+              <dd class="text-right tabular-money"><MoneyText :centavos="data.loan.interest_centavos" /></dd>
               <dt class="text-text-secondary">Total payable</dt>
               <dd class="text-right tabular-money"><MoneyText :centavos="data.loan.total_payable_centavos" /></dd>
               <dt class="text-text-secondary">Daily due</dt>
@@ -117,6 +120,7 @@
 
     <PaymentFormSheet v-if="data" :open="paymentOpen" :loan="data.loan" @update:open="paymentOpen = $event" />
     <OpeningBalanceForm v-if="data" :open="openingOpen" :loan-id="id" @update:open="openingOpen = $event" />
+    <LoanEditSheet v-if="data" :open="editOpen" :loan="data.loan" @update:open="editOpen = $event" />
     <ReversalDialog v-if="reversingPayment" :open="!!reversingPayment" :loan-id="id" :payment="reversingPayment" @update:open="(v: boolean) => !v && (reversingPayment = null)" />
   </div>
 </template>
@@ -134,6 +138,7 @@ const tabs = ['Loan details', 'Payments'] as const
 const menuOpen = ref(false)
 const paymentOpen = ref(false)
 const openingOpen = ref(false)
+const editOpen = ref(false)
 const reversingPayment = ref<any>(null)
 
 function close() {
