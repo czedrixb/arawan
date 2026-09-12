@@ -26,6 +26,10 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   const netPayments = (payments ?? []).filter((p) => p.kind === 'payment' && !reversedIds.has(p.id))
 
   const principalRecordedCentavos = sum(activeLoans.map((l) => l.principal_centavos ?? 0))
+  const interestRecordedCentavos = sum(activeLoans.map((l) => l.interest_centavos ?? 0))
+  const averageInterestRateBps = principalRecordedCentavos > 0
+    ? Math.round(interestRecordedCentavos / principalRecordedCentavos * 10_000)
+    : null
 
   const monthStart = monthStartIso(today)
   const collectedInPeriodCentavos = sum(
@@ -57,6 +61,8 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
 
   return {
     principalRecordedCentavos,
+    interestRecordedCentavos,
+    averageInterestRateBps,
     collectedInPeriodCentavos,
     outstandingTodayCentavos,
     outstandingExcludedCount,

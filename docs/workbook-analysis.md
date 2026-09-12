@@ -66,11 +66,10 @@ in `ARAWAN-implementation-plan.md`.
   anomalies at rows 34 and 45): **60 days ×20, 62 days ×17, 63 days ×3**.
   Confirms the plan's claim that there is no universal 60-day term.
 
-## Still deferred (per plan §2, unchanged by this analysis)
+## Resolved interpretation
 
-The meaning of `%` (interest amount, fee, or something else) and of DATE
-COMPLETED (contractual vs. actual settlement) remain unresolved. Imported
-rows land as `readiness = 'needs_review'` and are excluded from financial
-metrics until the owner resolves them explicitly in-app. Nothing here
-changes that — this document only corrects factual claims about the raw
-cell contents, not the open business-meaning questions.
+The workbook's `%` column is the monetary interest charged for each loan.
+The app stores that source value as `interest_centavos`, calculates its
+percentage against principal for display, and includes it in each loan's
+payable total and in Overview interest metrics. DATE COMPLETED remains a
+legacy source field rather than an automatically inferred settlement date.

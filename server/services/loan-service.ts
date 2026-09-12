@@ -8,10 +8,18 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { LoanFilters, LoanInput, LoanPatch } from '#shared/schemas/loan'
 
 const SORT_COLUMNS: Record<LoanFilters['sort'], { column: string; ascending: boolean }> = {
+  borrowed_asc: { column: 'borrowed_on', ascending: true },
   borrowed_desc: { column: 'borrowed_on', ascending: false },
-  due_asc: { column: 'due_on', ascending: true },
   name_asc: { column: 'borrower_normalized_name', ascending: true },
-  remaining_desc: { column: 'remaining_centavos', ascending: false },
+  name_desc: { column: 'borrower_normalized_name', ascending: false },
+  principal_asc: { column: 'principal_centavos', ascending: true },
+  principal_desc: { column: 'principal_centavos', ascending: false },
+  interest_asc: { column: 'interest_rate_bps', ascending: true },
+  interest_desc: { column: 'interest_rate_bps', ascending: false },
+  daily_asc: { column: 'daily_due_centavos', ascending: true },
+  daily_desc: { column: 'daily_due_centavos', ascending: false },
+  status_asc: { column: 'display_status', ascending: true },
+  status_desc: { column: 'display_status', ascending: false },
 }
 
 export async function listLoans(

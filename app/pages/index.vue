@@ -17,7 +17,15 @@
           <p class="mt-1 text-[32px] font-bold leading-none text-text-primary tabular-money">
             {{ formatCentavos(overview.principalRecordedCentavos) }}
           </p>
-          <div class="mt-4 grid grid-cols-2 gap-4 border-t border-border pt-4">
+          <div class="mt-4 grid grid-cols-2 gap-4 border-t border-border pt-4 lg:grid-cols-4">
+            <div>
+              <p class="text-xs text-text-secondary">Interest recorded</p>
+              <p class="text-lg font-semibold tabular-money">{{ formatCentavos(overview.interestRecordedCentavos) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-text-secondary">Average interest rate</p>
+              <p class="text-lg font-semibold tabular-money">{{ formatBps(overview.averageInterestRateBps) }}</p>
+            </div>
             <div>
               <p class="text-xs text-text-secondary">Collected this month</p>
               <p class="text-lg font-semibold tabular-money">{{ formatCentavos(overview.collectedInPeriodCentavos) }}</p>
@@ -76,6 +84,10 @@ const { data: overview, pending, error, refresh } = useCachedFetch<OverviewRespo
 const todayLabel = computed(() => formatDateDisplay(todayIso()))
 const addOpen = ref(false)
 const toast = useToast()
+
+function formatBps(bps: number | null) {
+  return bps === null ? '—' : `${(bps / 100).toFixed(1)}%`
+}
 
 function onCreated() {
   addOpen.value = false

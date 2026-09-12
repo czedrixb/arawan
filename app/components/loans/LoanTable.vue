@@ -11,17 +11,15 @@
             :class="col.numeric ? 'text-right' : ''"
           >
             <button
-              v-if="col.sort"
               type="button"
               class="press flex items-center gap-1"
               :class="col.numeric ? 'w-full justify-end' : ''"
-              :aria-sort="ariaSortFor(col.sort)"
-              @click="$emit('sort', col.sort)"
+              :aria-sort="ariaSortFor(col)"
+              @click="sortColumn(col)"
             >
               {{ col.label }}
               <PhCaretUpDown :size="12" />
             </button>
-            <span v-else :class="col.numeric ? 'block text-right' : ''">{{ col.label }}</span>
           </th>
           <th scope="col" class="px-4 py-3" />
         </tr>
@@ -35,8 +33,8 @@
           </td>
           <td class="px-4 py-3 text-text-secondary">{{ formatDateDisplay(loan.borrowed_on) }}</td>
           <td class="px-4 py-3 text-right tabular-money"><MoneyText :centavos="loan.principal_centavos" /></td>
+          <td class="px-4 py-3 text-right tabular-money">{{ formatInterestRate(loan.interest_centavos, loan.principal_centavos) }}</td>
           <td class="px-4 py-3 text-right tabular-money"><MoneyText :centavos="loan.daily_due_centavos" /></td>
-          <td class="px-4 py-3 text-right tabular-money"><MoneyText :centavos="loan.remaining_centavos" /></td>
           <td class="px-4 py-3"><StatusPill :status="loan.display_status" /></td>
           <td class="px-4 py-3 text-right">
             <button type="button" class="press rounded-full p-1.5 text-text-secondary" :aria-label="`Actions for ${loan.borrower_display_name}`" @click="$emit('more', loan)">
@@ -57,18 +55,24 @@ import { PhCaretUpDown, PhDotsThreeVertical } from '@phosphor-icons/vue'
 import type { LoanFilters } from '#shared/schemas/loan'
 
 const props = defineProps<{ loans: any[]; sort: LoanFilters['sort'] }>()
-defineEmits<{ sort: [LoanFilters['sort']]; more: [loan: any] }>()
+const emit = defineEmits<{ sort: [LoanFilters['sort']]; more: [loan: any] }>()
 
 const columns = [
-  { key: 'name', label: 'Name', sort: 'name_asc' as const },
-  { key: 'borrowed', label: 'Borrowed', sort: undefined },
-  { key: 'amount', label: 'Amount', sort: undefined, numeric: true },
-  { key: 'daily', label: 'Daily', sort: undefined, numeric: true },
-  { key: 'remaining', label: 'Remaining', sort: 'remaining_desc' as const, numeric: true },
-  { key: 'status', label: 'Status', sort: undefined },
+  { key: 'name', label: 'Name', ascending: 'name_asc' as const, descending: 'name_desc' as const },
+  { key: 'borrowed', label: 'Borrowed', ascending: 'borrowed_asc' as const, descending: 'borrowed_desc' as const },
+  { key: 'amount', label: 'Amount', ascending: 'principal_asc' as const, descending: 'principal_desc' as const, numeric: true },
+  { key: 'interest', label: 'Interest %', ascending: 'interest_asc' as const, descending: 'interest_desc' as const, numeric: true },
+  { key: 'daily', label: 'Daily', ascending: 'daily_asc' as const, descending: 'daily_desc' as const, numeric: true },
+  { key: 'status', label: 'Status', ascending: 'status_asc' as const, descending: 'status_desc' as const },
 ]
 
-function ariaSortFor(sortKey: LoanFilters['sort']) {
-  return props.sort === sortKey ? 'ascending' : 'none'
+function ariaSortFor(column: typeof columns[number]) {
+  if (props.sort === column.ascending) return 'ascending'
+  if (props.sort === column.descending) return 'descending'
+  return 'none'
+}
+
+function sortColumn(column: typeof columns[number]) {
+  emit('sort', props.sort === column.ascending ? column.descending : column.ascending)
 }
 </script>

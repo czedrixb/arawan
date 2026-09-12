@@ -22,12 +22,12 @@
             <p class="truncate text-right text-xs font-medium tabular-money text-text-primary"><MoneyText :centavos="loan.principal_centavos" /></p>
           </div>
           <div class="min-w-0">
-            <p class="text-right text-[10px] font-medium uppercase tracking-wide text-text-secondary">Daily</p>
-            <p class="truncate text-right text-xs font-medium tabular-money text-text-primary"><MoneyText :centavos="loan.daily_due_centavos" /></p>
+            <p class="text-right text-[10px] font-medium uppercase tracking-wide text-text-secondary">Interest %</p>
+            <p class="truncate text-right text-xs font-medium tabular-money text-text-primary">{{ formatInterestRate(loan.interest_centavos, loan.principal_centavos) }}</p>
           </div>
           <div class="min-w-0">
-            <p class="text-right text-[10px] font-medium uppercase tracking-wide text-text-secondary">Remaining</p>
-            <p class="truncate text-right text-xs font-medium tabular-money text-text-primary"><MoneyText :centavos="loan.remaining_centavos" /></p>
+            <p class="text-right text-[10px] font-medium uppercase tracking-wide text-text-secondary">Daily</p>
+            <p class="truncate text-right text-xs font-medium tabular-money text-text-primary"><MoneyText :centavos="loan.daily_due_centavos" /></p>
           </div>
         </div>
       </NuxtLink>

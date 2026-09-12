@@ -82,7 +82,7 @@ function onApply() {
   openModel.value = false
 }
 function onClear() {
-  emit('apply', { status: 'all', archived: 'exclude', sort: 'borrowed_desc' })
+  emit('apply', { status: 'all', archived: 'exclude', sort: 'borrowed_asc' })
   openModel.value = false
 }
 </script>

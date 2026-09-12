@@ -55,6 +55,8 @@
             <dl class="grid grid-cols-2 gap-y-3 text-sm">
               <dt class="text-text-secondary">Principal</dt>
               <dd class="text-right tabular-money"><MoneyText :centavos="data.loan.principal_centavos" /></dd>
+              <dt class="text-text-secondary">Interest</dt>
+              <dd class="text-right tabular-money">{{ formatInterestRate(data.loan.interest_centavos, data.loan.principal_centavos) }}</dd>
               <dt class="text-text-secondary">Total payable</dt>
               <dd class="text-right tabular-money"><MoneyText :centavos="data.loan.total_payable_centavos" /></dd>
               <dt class="text-text-secondary">Daily due</dt>
@@ -77,7 +79,7 @@
 
             <div v-if="data.loan.legacy_percent_value != null || data.loan.legacy_completed_on" class="rounded-control bg-surface-subtle p-4 text-sm">
               <p class="mb-1 font-semibold text-text-primary">Source (legacy) values</p>
-              <p v-if="data.loan.legacy_percent_value != null" class="text-text-secondary">"%" column: {{ data.loan.legacy_percent_value }} (meaning not yet resolved)</p>
+              <p v-if="data.loan.legacy_percent_value != null" class="text-text-secondary">"%" column: <MoneyText :centavos="data.loan.legacy_percent_value" /></p>
               <p v-if="data.loan.legacy_completed_on" class="text-text-secondary">DATE COMPLETED: {{ formatDateDisplay(data.loan.legacy_completed_on) }}</p>
             </div>
 

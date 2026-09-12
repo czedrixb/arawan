@@ -18,7 +18,7 @@ export function useRecordFilters() {
   // docs/performance.md). Memoize by serialized content so the SAME
   // object is returned when nothing actually changed.
   let lastSerialized = ''
-  let lastResult: Partial<LoanFilters> = { status: 'all', archived: 'exclude', sort: 'borrowed_desc', page: 1, pageSize: 25 }
+  let lastResult: Partial<LoanFilters> = { status: 'all', archived: 'exclude', sort: 'borrowed_asc', page: 1, pageSize: 25 }
   const filters = computed<Partial<LoanFilters>>(() => {
     const parsed = loanFiltersSchema.safeParse({
       ...route.query,
