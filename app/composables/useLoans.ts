@@ -26,13 +26,13 @@ export function useLoan(id: Ref<string> | string) {
 
 export async function createLoan(input: Record<string, unknown>) {
   const loan = await $fetch('/api/loans', { method: 'POST', body: input })
-  await refreshNuxtData()
+  await syncRecordData()
   return loan
 }
 
 export async function patchLoan(id: string, patch: Record<string, unknown>) {
   const loan = await $fetch(`/api/loans/${id}`, { method: 'PATCH', body: patch })
-  await refreshNuxtData()
+  await syncRecordData({ loanId: id })
   return loan
 }
 
@@ -52,7 +52,7 @@ export async function setLoanArchived(id: string, archived: boolean, version: nu
   }
   try {
     const result = await $fetch(`/api/loans/${id}/archive`, { method: 'POST', body: { archived, version } })
-    await refreshNuxtData()
+    await syncRecordData({ loanId: id })
     return result
   } catch (err) {
     if (previous) {

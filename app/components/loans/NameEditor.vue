@@ -58,7 +58,7 @@ async function save() {
       method: 'PATCH',
       body: { displayName: value.value.trim(), version: props.loan.borrower_version },
     })
-    await refreshNuxtData()
+    await syncRecordData({ loanId: props.loan.id })
     editing.value = false
     saveState.value = 'idle'
   } catch {
