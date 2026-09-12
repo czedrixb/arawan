@@ -61,7 +61,14 @@ export const loanFiltersSchema = z.object({
   borrowedTo: isoDate.optional(),
   balanceMin: z.number().int().nonnegative().optional(),
   balanceMax: z.number().int().nonnegative().optional(),
-  sort: z.enum(['borrowed_desc', 'due_asc', 'name_asc', 'remaining_desc']).default('borrowed_desc'),
+  sort: z.enum([
+    'borrowed_asc', 'borrowed_desc',
+    'name_asc', 'name_desc',
+    'principal_asc', 'principal_desc',
+    'interest_asc', 'interest_desc',
+    'daily_asc', 'daily_desc',
+    'status_asc', 'status_desc',
+  ]).default('borrowed_asc'),
   page: z.number().int().positive().default(1),
   pageSize: z.union([z.literal(25), z.literal(50), z.literal(100)]).default(25),
 })

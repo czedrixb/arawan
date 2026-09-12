@@ -14,6 +14,17 @@ export function formatCentavos(centavos: number | bigint | null | undefined): st
   return PHP_FORMATTER.format(pesos)
 }
 
+/** Formats a loan's interest as a percentage of its principal. */
+export function formatInterestRate(
+  interestCentavos: number | bigint | null | undefined,
+  principalCentavos: number | bigint | null | undefined,
+): string {
+  if (interestCentavos === null || interestCentavos === undefined || principalCentavos === null || principalCentavos === undefined || Number(principalCentavos) <= 0) {
+    return '—'
+  }
+  return `${(Number(interestCentavos) / Number(principalCentavos) * 100).toFixed(1)}%`
+}
+
 /**
  * Parses a user-typed decimal amount string (e.g. "1,500.50") into integer
  * centavos without float rounding error. Returns null if the input is not

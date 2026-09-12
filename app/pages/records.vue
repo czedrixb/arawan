@@ -59,7 +59,7 @@
             <LoanListItem v-for="loan in data.rows" :key="loan.id" :loan="loan" @more="onMore" @record-payment="onRecordPaymentFor" />
           </ul>
           <div class="hidden lg:block">
-            <LoanTable :loans="data.rows" :sort="filters.sort ?? 'borrowed_desc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @more="onMore" />
+            <LoanTable :loans="data.rows" :sort="filters.sort ?? 'borrowed_asc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @more="onMore" />
           </div>
           <div class="mt-3 flex items-center justify-between text-sm text-text-secondary">
             <span>{{ data.total }} records</span>

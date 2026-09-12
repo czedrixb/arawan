@@ -5,17 +5,23 @@
 // RLS with the service role key and does not go through record_payment/
 // commit_import at all.
 //
-// Usage:
+// Usage (service role):
 //   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... ARAWAN_OWNER_ID=... \
+//     node scripts/seed-workbook.mjs "d:\Downloads\ARAWAN copy.xlsx"
+// Usage (owner session, suitable for the local development .env):
+//   NUXT_PUBLIC_SUPABASE_URL=... NUXT_PUBLIC_SUPABASE_KEY=... \
+//   ARAWAN_OWNER_EMAIL=... ARAWAN_OWNER_PASSWORD=... \
 //     node scripts/seed-workbook.mjs "d:\Downloads\ARAWAN copy.xlsx"
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
 import zlib from 'node:zlib'
 
 const [, , xlsxPath] = process.argv
-const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ARAWAN_OWNER_ID } = process.env
-if (!xlsxPath || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !ARAWAN_OWNER_ID) {
-  console.error('Usage: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... ARAWAN_OWNER_ID=... node scripts/seed-workbook.mjs <path-to-ARAWAN-copy.xlsx>')
+const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NUXT_PUBLIC_SUPABASE_URL, NUXT_PUBLIC_SUPABASE_KEY, ARAWAN_OWNER_ID, ARAWAN_OWNER_EMAIL, ARAWAN_OWNER_PASSWORD } = process.env
+const supabaseUrl = SUPABASE_URL ?? NUXT_PUBLIC_SUPABASE_URL
+const supabaseKey = SUPABASE_SERVICE_ROLE_KEY ?? NUXT_PUBLIC_SUPABASE_KEY
+if (!xlsxPath || !supabaseUrl || !supabaseKey || (!ARAWAN_OWNER_ID && (!ARAWAN_OWNER_EMAIL || !ARAWAN_OWNER_PASSWORD))) {
+  console.error('Provide a service role + ARAWAN_OWNER_ID, or an owner email/password with NUXT_PUBLIC_SUPABASE_URL and NUXT_PUBLIC_SUPABASE_KEY.')
   process.exit(1)
 }
 
@@ -80,9 +86,16 @@ function excelSerialToIso(serial) {
 
 async function main() {
   const grid = readWorkbookGrid(xlsxPath)
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  const supabase = createClient(supabaseUrl, supabaseKey)
+  let ownerId = ARAWAN_OWNER_ID
+  if (!ownerId) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email: ARAWAN_OWNER_EMAIL, password: ARAWAN_OWNER_PASSWORD })
+    if (error || !data.user) throw error ?? new Error('Owner sign-in did not return a user')
+    ownerId = data.user.id
+  }
 
   let inserted = 0
+  let skipped = 0
   for (let row = 4; row <= 45; row++) {
     const displayName = grid[`B${row}`]
     if (!displayName) continue
@@ -90,7 +103,7 @@ async function main() {
     const { data: existing } = await supabase
       .from('borrowers')
       .select('id')
-      .eq('owner_id', ARAWAN_OWNER_ID)
+      .eq('owner_id', ownerId)
       .eq('display_name', displayName)
       .maybeSingle()
 
@@ -98,7 +111,7 @@ async function main() {
     if (!borrowerId) {
       const { data: borrower, error } = await supabase
         .from('borrowers')
-        .insert({ owner_id: ARAWAN_OWNER_ID, display_name: displayName, normalized_name: normalizeName(displayName) })
+        .insert({ owner_id: ownerId, display_name: displayName, normalized_name: normalizeName(displayName) })
         .select('id')
         .single()
       if (error) throw error
@@ -106,17 +119,30 @@ async function main() {
     }
 
     const principalCentavos = Math.round(Number(grid[`F${row}`]) * 100)
+    const interestCentavos = Math.round(Number(grid[`H${row}`]) * 100)
     const borrowedOn = excelSerialToIso(grid[`C${row}`])
 
+    const { data: existingLoan, error: existingLoanError } = await supabase
+      .from('loans')
+      .select('id')
+      .eq('owner_id', ownerId)
+      .eq('source_sequence', Number(grid[`A${row}`]))
+      .maybeSingle()
+    if (existingLoanError) throw existingLoanError
+    if (existingLoan) {
+      skipped++
+      continue
+    }
+
     const { error: loanError } = await supabase.from('loans').insert({
-      owner_id: ARAWAN_OWNER_ID,
+      owner_id: ownerId,
       borrower_id: borrowerId,
       source_sequence: Number(grid[`A${row}`]),
       principal_centavos: principalCentavos,
       daily_due_centavos: Math.round(Number(grid[`G${row}`]) * 100),
-      interest_mode: 'none',
-      interest_centavos: 0,
-      total_payable_centavos: principalCentavos,
+      interest_mode: interestCentavos > 0 ? 'added' : 'none',
+      interest_centavos: interestCentavos,
+      total_payable_centavos: principalCentavos + interestCentavos,
       borrowed_on: borrowedOn,
       payment_start_on: borrowedOn,
       due_on: '2099-12-31',
@@ -129,7 +155,7 @@ async function main() {
     inserted++
   }
 
-  console.log(`Seeded ${inserted} active loans from ${xlsxPath}.`)
+  console.log(`Seeded ${inserted} active loans from ${xlsxPath}; skipped ${skipped} existing source rows.`)
 }
 
 main().catch((err) => {

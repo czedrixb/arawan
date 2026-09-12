@@ -20,6 +20,8 @@ export interface LoanDetailResponse {
 
 export interface OverviewResponse {
   principalRecordedCentavos: number
+  interestRecordedCentavos: number
+  averageInterestRateBps: number | null
   collectedInPeriodCentavos: number
   outstandingTodayCentavos: number
   outstandingExcludedCount: number
