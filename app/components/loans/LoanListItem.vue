@@ -44,10 +44,10 @@
       </button>
     </div>
     <!-- Swipe reveal -- mirrored exactly by the visible More menu, never the only way to reach these actions (spec §6). -->
-    <div v-if="dragX < 0" class="absolute inset-y-0 right-0 flex items-stretch" :style="{ width: `${revealWidth}px` }">
-      <button type="button" class="flex-1 bg-primary px-3 text-xs font-medium text-white" @click="onRecordPayment">Record payment</button>
-      <button type="button" class="flex-1 bg-accent-soft px-3 text-xs font-medium text-primary" @click="$emit('edit', loan)">Edit</button>
-      <button type="button" class="flex-1 bg-surface-subtle px-3 text-xs font-medium text-text-primary" @click="$emit('more', loan)">More</button>
+    <div v-if="dragX < 0" class="absolute inset-y-0 right-0 flex flex-col" :style="{ width: `${revealWidth}px` }">
+      <button type="button" class="flex-1 bg-primary px-2 text-xs font-medium text-white" @click="onRecordPayment">Record payment</button>
+      <button type="button" class="flex-1 bg-accent-soft px-2 text-xs font-medium text-primary" @click="$emit('edit', loan)">Edit</button>
+      <button type="button" class="flex-1 bg-surface-subtle px-2 text-xs font-medium text-text-primary" @click="$emit('more', loan)">More</button>
     </div>
   </li>
 </template>
@@ -58,7 +58,7 @@ import { PhDotsThreeVertical } from '@phosphor-icons/vue'
 const props = defineProps<{ loan: any }>()
 const emit = defineEmits<{ more: [loan: any]; edit: [loan: any]; 'record-payment': [loan: any] }>()
 
-const revealWidth = 264
+const revealWidth = 96
 const dragX = ref(0)
 let startX = 0
 let startY = 0
