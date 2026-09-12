@@ -40,7 +40,7 @@ export function isoWeekday(iso: string): number {
   return day === 0 ? 7 : day
 }
 
-function addDaysIso(iso: string, days: number): string {
+export function addDaysIso(iso: string, days: number): string {
   const [y, m, d] = parseIsoParts(iso)
   const dt = new Date(Date.UTC(y, m - 1, d))
   dt.setUTCDate(dt.getUTCDate() + days)

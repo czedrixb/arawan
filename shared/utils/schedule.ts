@@ -11,6 +11,8 @@ export interface ScheduleInput {
   interestCentavos: number
   paymentStartOn: string
   collectionWeekdays: number[]
+  /** Defaults to STANDARD_INSTALLMENTS -- every new loan uses the house's fixed 60-day term. */
+  installmentCount?: number
 }
 
 export interface SchedulePreview {
@@ -18,6 +20,24 @@ export interface SchedulePreview {
   installmentCount: number
   finalInstallmentCentavos: number
   proposedDueOn: string
+}
+
+/** House terms (this task): every new loan carries 20% interest over a fixed 60-day collection term. */
+export const STANDARD_INTEREST_RATE_BPS = 2000
+export const STANDARD_INSTALLMENTS = 60
+
+/** `principal x 20%`, rounded to the nearest centavo. */
+export function computeStandardInterest(principalCentavos: number): number {
+  return Math.round((principalCentavos * STANDARD_INTEREST_RATE_BPS) / 10_000)
+}
+
+/**
+ * `(principal + interest) / 60`, rounded UP to the nearest centavo so 60
+ * installments always cover the total -- the 60th installment absorbs the
+ * (small, non-negative) remainder instead of coming up short.
+ */
+export function computeStandardDailyDue(totalPayableCentavos: number): number {
+  return Math.ceil(totalPayableCentavos / STANDARD_INSTALLMENTS)
 }
 
 /**
@@ -32,9 +52,11 @@ export function computeTotalPayable(input: Pick<ScheduleInput, 'principalCentavo
 
 export function previewSchedule(input: ScheduleInput): SchedulePreview {
   const totalPayableCentavos = computeTotalPayable(input)
-  const installmentCount = Math.ceil(totalPayableCentavos / input.dailyDueCentavos)
-  const finalInstallmentCentavos =
-    totalPayableCentavos - input.dailyDueCentavos * (installmentCount - 1)
+  const installmentCount = input.installmentCount ?? STANDARD_INSTALLMENTS
+  const finalInstallmentCentavos = Math.max(
+    0,
+    totalPayableCentavos - input.dailyDueCentavos * (installmentCount - 1),
+  )
   const proposedDueOn = projectScheduleEnd(input.paymentStartOn, installmentCount, input.collectionWeekdays)
   return { totalPayableCentavos, installmentCount, finalInstallmentCentavos, proposedDueOn }
 }
