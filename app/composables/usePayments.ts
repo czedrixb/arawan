@@ -33,7 +33,7 @@ export async function recordPayment(loanId: string, input: { amountCentavos: num
   try {
     const summary = await $fetch(`/api/loans/${loanId}/payments`, { method: 'POST', body: input })
     reconcileLoan(loanId, summary)
-    await Promise.all([refreshNuxtData(`payments:${loanId}:1:25`), refreshNuxtData('/api/overview')])
+    await syncRecordData({ loanId, payments: true })
     return summary
   } catch (err) {
     if (previous) {
@@ -47,14 +47,14 @@ export async function recordPayment(loanId: string, input: { amountCentavos: num
 export async function reversePayment(loanId: string, paymentId: string, input: { reason: string; idempotencyKey: string }) {
   const summary = await $fetch(`/api/payments/${paymentId}/reverse`, { method: 'POST', body: input })
   reconcileLoan(loanId, summary)
-  await Promise.all([refreshNuxtData(), refreshNuxtData('/api/overview')])
+  await syncRecordData({ loanId, payments: true })
   return summary
 }
 
 export async function confirmOpeningBalance(loanId: string, input: { collectedCentavos: number; asOf: string; reason: string }) {
   const summary = await $fetch(`/api/loans/${loanId}/opening-balance`, { method: 'POST', body: input })
   reconcileLoan(loanId, summary)
-  await refreshNuxtData('/api/overview')
+  await syncRecordData({ loanId })
   return summary
 }
 

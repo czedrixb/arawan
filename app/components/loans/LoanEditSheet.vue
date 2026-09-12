@@ -121,7 +121,7 @@ async function onSubmit() {
         ...currentValues(),
       },
     })
-    await refreshNuxtData()
+    await syncRecordData({ loanId: props.loan.id })
     emit('saved')
     emit('update:open', false)
     useToast().show('Record updated')
