@@ -3,7 +3,7 @@
     <p class="text-sm text-text-secondary">
       Total: <span class="font-semibold text-text-primary tabular-money">{{ formatCentavos(total) }}</span>
     </p>
-    <svg :viewBox="`0 0 ${bars.length * 60} 140`" class="mt-3 h-32 w-full" role="img" :aria-label="`Monthly collections chart, total ${formatCentavos(total)}`">
+    <svg :viewBox="`0 0 ${bars.length * 60} 140`" preserveAspectRatio="none" class="mt-3 h-32 w-full" role="img" :aria-label="`Monthly collections chart, total ${formatCentavos(total)}`">
       <g v-for="(bar, i) in bars" :key="bar.month">
         <rect
           :x="i * 60 + 12"
@@ -32,7 +32,7 @@
         </tbody>
       </table>
     </figcaption>
-    <div class="mt-1 flex justify-between text-[11px] text-text-secondary">
+    <div class="mt-1 grid text-center text-[11px] text-text-secondary" :style="{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }">
       <span v-for="bar in bars" :key="bar.month">{{ bar.month.slice(5) }}</span>
     </div>
   </figure>

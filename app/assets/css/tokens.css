@@ -77,6 +77,9 @@
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  .sheet-footer-bottom {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
 
   /* Spec §4 motion budget: 100-140ms press feedback, opacity/transform only. */
   .press {

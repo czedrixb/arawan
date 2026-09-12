@@ -19,7 +19,7 @@
           <div class="flex-1 overflow-y-auto px-5 py-4">
             <slot />
           </div>
-          <div v-if="$slots.footer" class="safe-bottom border-t border-border px-5 py-4">
+          <div v-if="$slots.footer" data-testid="app-sheet-footer" class="sheet-footer-bottom border-t border-border px-5 pt-4">
             <slot name="footer" />
           </div>
         </DialogContent>
