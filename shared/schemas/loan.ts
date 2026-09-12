@@ -53,6 +53,19 @@ export const loanPatchSchema = z.object({
 })
 export type LoanPatch = z.infer<typeof loanPatchSchema>
 
+export const loanRecordEditSchema = z.object({
+  version: z.number().int().nonnegative(),
+  borrowerVersion: z.number().int().nonnegative(),
+  displayName: z.string().trim().min(1, 'Name is required').max(200),
+  borrowedOn: isoDate,
+  paymentStartOn: isoDate,
+  dueOn: isoDate,
+  principalCentavos: centavos,
+  dailyDueCentavos: centavos,
+  interestCentavos: z.number().int().nonnegative().max(MAX_CENTAVOS),
+})
+export type LoanRecordEdit = z.infer<typeof loanRecordEditSchema>
+
 export const loanFiltersSchema = z.object({
   q: z.string().trim().max(200).optional(),
   status: z.enum(['all', 'active', 'completed', 'upcoming', 'overdue', 'needs_review']).default('all'),
@@ -62,6 +75,9 @@ export const loanFiltersSchema = z.object({
   balanceMin: z.number().int().nonnegative().optional(),
   balanceMax: z.number().int().nonnegative().optional(),
   sort: z.enum([
+    'sequence_asc', 'sequence_desc',
+    'payment_start_asc', 'payment_start_desc',
+    'completed_asc', 'completed_desc',
     'borrowed_asc', 'borrowed_desc',
     'name_asc', 'name_desc',
     'principal_asc', 'principal_desc',

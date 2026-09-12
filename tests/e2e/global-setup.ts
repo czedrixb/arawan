@@ -31,7 +31,8 @@ export default async function globalSetup(config: FullConfig) {
     await page.waitForURL(`${baseURL}/`, { timeout: 15_000 })
     await page.context().storageState({ path: STORAGE_STATE_PATH })
   } catch (err) {
-    console.warn('[global-setup] Sign-in failed -- writing an empty session. Authenticated specs will skip themselves.', err);
+    const visibleError = await page.getByRole('alert').allTextContents().catch(() => [])
+    console.warn(`[global-setup] Sign-in failed at ${page.url()} (${visibleError.join(' ').trim() || 'no visible form error'}) -- writing an empty session.`, err);
     writeFileSync(STORAGE_STATE_PATH, JSON.stringify({ cookies: [], origins: [] }))
   } finally {
     await browser.close()

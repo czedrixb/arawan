@@ -5,17 +5,23 @@
 // substitute for checks inside the app layer either" spirit: defense in
 // depth, and it makes intent obvious on read.
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { LoanFilters, LoanInput, LoanPatch } from '#shared/schemas/loan'
+import type { LoanFilters, LoanInput, LoanPatch, LoanRecordEdit } from '#shared/schemas/loan'
 
 const SORT_COLUMNS: Record<LoanFilters['sort'], { column: string; ascending: boolean }> = {
+  sequence_asc: { column: 'source_sequence', ascending: true },
+  sequence_desc: { column: 'source_sequence', ascending: false },
+  payment_start_asc: { column: 'payment_start_on', ascending: true },
+  payment_start_desc: { column: 'payment_start_on', ascending: false },
+  completed_asc: { column: 'due_on', ascending: true },
+  completed_desc: { column: 'due_on', ascending: false },
   borrowed_asc: { column: 'borrowed_on', ascending: true },
   borrowed_desc: { column: 'borrowed_on', ascending: false },
   name_asc: { column: 'borrower_normalized_name', ascending: true },
   name_desc: { column: 'borrower_normalized_name', ascending: false },
   principal_asc: { column: 'principal_centavos', ascending: true },
   principal_desc: { column: 'principal_centavos', ascending: false },
-  interest_asc: { column: 'interest_rate_bps', ascending: true },
-  interest_desc: { column: 'interest_rate_bps', ascending: false },
+  interest_asc: { column: 'interest_centavos', ascending: true },
+  interest_desc: { column: 'interest_centavos', ascending: false },
   daily_asc: { column: 'daily_due_centavos', ascending: true },
   daily_desc: { column: 'daily_due_centavos', ascending: false },
   status_asc: { column: 'display_status', ascending: true },
@@ -51,13 +57,14 @@ export async function listLoans(
   const to = from + filters.pageSize - 1
   const { data, error, count } = await query.range(from, to)
   if (error) throw error
-  return { rows: data ?? [], total: count ?? 0 }
+  return { rows: await attachFinancialTermLocks(client, ownerId, data ?? []), total: count ?? 0 }
 }
 
 export async function getLoanById(client: SupabaseClient, ownerId: string, id: string): Promise<LoanSummary | null> {
   const { data, error } = await client.from('loan_summary').select('*').eq('owner_id', ownerId).eq('id', id).maybeSingle()
   if (error) throw error
-  return data
+  if (!data) return null
+  return (await attachFinancialTermLocks(client, ownerId, [data]))[0] ?? null
 }
 
 export async function listLoansByBorrower(client: SupabaseClient, ownerId: string, borrowerId: string): Promise<LoanSummary[]> {
@@ -68,7 +75,20 @@ export async function listLoansByBorrower(client: SupabaseClient, ownerId: strin
     .eq('borrower_id', borrowerId)
     .order('borrowed_on', { ascending: false })
   if (error) throw error
-  return data ?? []
+  return attachFinancialTermLocks(client, ownerId, data ?? [])
+}
+
+async function attachFinancialTermLocks(client: SupabaseClient, ownerId: string, loans: LoanSummary[]) {
+  if (loans.length === 0) return loans
+  const ids = loans.map((loan) => loan.id)
+  const [payments, openings] = await Promise.all([
+    client.from('payment_entries').select('loan_id').eq('owner_id', ownerId).in('loan_id', ids),
+    client.from('opening_balances').select('loan_id').eq('owner_id', ownerId).in('loan_id', ids),
+  ])
+  if (payments.error) throw payments.error
+  if (openings.error) throw openings.error
+  const lockedIds = new Set([...(payments.data ?? []), ...(openings.data ?? [])].map((row) => row.loan_id))
+  return loans.map((loan) => ({ ...loan, financial_terms_locked: lockedIds.has(loan.id) }))
 }
 
 /** Creates the borrower (if new) and the loan atomically via a single RPC-free multi-statement -- see note below. */
@@ -176,6 +196,24 @@ export async function patchLoan(client: SupabaseClient, ownerId: string, id: str
   if (error) throw error
   if (!data) return null // stale version (or not found) -- caller maps to 409/404
   return getLoanById(client, ownerId, id)
+}
+
+export async function editLoanRecord(client: SupabaseClient, id: string, input: LoanRecordEdit) {
+  const { data, error } = await client.rpc('edit_loan_record', {
+    p_loan_id: id,
+    p_loan_version: input.version,
+    p_borrower_version: input.borrowerVersion,
+    p_display_name: input.displayName,
+    p_normalized_name: normalizeName(input.displayName),
+    p_borrowed_on: input.borrowedOn,
+    p_payment_start_on: input.paymentStartOn,
+    p_due_on: input.dueOn,
+    p_principal_centavos: input.principalCentavos,
+    p_daily_due_centavos: input.dailyDueCentavos,
+    p_interest_centavos: input.interestCentavos,
+  })
+  if (error) throw error
+  return data as LoanSummary
 }
 
 export async function setArchived(client: SupabaseClient, ownerId: string, id: string, archived: boolean, version: number): Promise<LoanSummary | null> {

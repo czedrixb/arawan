@@ -56,10 +56,10 @@
         />
         <template v-else>
           <ul class="overflow-hidden rounded-card border border-border lg:hidden">
-            <LoanListItem v-for="loan in data.rows" :key="loan.id" :loan="loan" @more="onMore" @record-payment="onRecordPaymentFor" />
+            <LoanListItem v-for="loan in data.rows" :key="loan.id" :loan="loan" @more="onMore" @edit="onEdit" @record-payment="onRecordPaymentFor" />
           </ul>
           <div class="hidden lg:block">
-            <LoanTable :loans="data.rows" :sort="filters.sort ?? 'borrowed_asc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @more="onMore" />
+            <LoanTable :loans="data.rows" :sort="filters.sort ?? 'borrowed_asc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @edit="onEdit" />
           </div>
           <div class="mt-3 flex items-center justify-between text-sm text-text-secondary">
             <span>{{ data.total }} records</span>
@@ -75,6 +75,7 @@
 
     <LoanFilters v-model:open="filterOpen" :model-filters="filters" @apply="update" />
     <LoanFormSheet v-model:open="addOpen" @created="addOpen = false" />
+    <LoanEditSheet :open="!!editLoan" :loan="editLoan" @update:open="(open: boolean) => !open && (editLoan = null)" />
     <PaymentFormSheet v-if="paymentLoan" :open="!!paymentLoan" :loan="paymentLoan" @update:open="(v: boolean) => !v && (paymentLoan = null)" />
 
     <!--
@@ -117,6 +118,7 @@ function clearFilters() {
 const filterOpen = ref(false)
 const addOpen = ref(false)
 const paymentLoan = ref<any>(null)
+const editLoan = ref<LoanSummary | null>(null)
 
 const mobileSegments = [
   { value: 'all', label: 'All' },
@@ -126,6 +128,9 @@ const mobileSegments = [
 
 function onMore(loan: any) {
   navigateTo(`/records/${loan.id}`)
+}
+function onEdit(loan: LoanSummary) {
+  editLoan.value = loan
 }
 function onRecordPaymentFor(loan: any) {
   paymentLoan.value = loan
