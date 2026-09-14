@@ -31,15 +31,23 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label for="edit-record-amount" class="mb-1 block text-sm text-text-secondary">Amount (₱)</label>
-            <input id="edit-record-amount" :value="principal.text.value" :disabled="financialTermsLocked" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" @input="principal.onInput(($event.target as HTMLInputElement).value)" @blur="principal.onBlur" />
+            <input id="edit-record-amount" :value="principal.text.value" :disabled="financialTermsLocked" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" @input="onPrincipalInput(($event.target as HTMLInputElement).value)" @blur="principal.onBlur" />
           </div>
           <div>
-            <label for="edit-record-daily" class="mb-1 block text-sm text-text-secondary">Daily (₱)</label>
-            <input id="edit-record-daily" :value="daily.text.value" :disabled="financialTermsLocked" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" @input="daily.onInput(($event.target as HTMLInputElement).value)" @blur="daily.onBlur" />
+            <div class="mb-1 flex items-center justify-between">
+              <label for="edit-record-daily" class="text-sm text-text-secondary">Daily (₱)</label>
+              <button v-if="dailyTouched && !financialTermsLocked" type="button" class="press text-xs font-medium text-primary" @click="resetDaily">Reset</button>
+            </div>
+            <input id="edit-record-daily" :value="daily.text.value" :disabled="financialTermsLocked" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" @input="onDailyInput(($event.target as HTMLInputElement).value)" @blur="daily.onBlur" />
+            <p class="mt-1 text-xs text-text-secondary">Auto: (principal + interest) ÷ 60</p>
           </div>
           <div class="col-span-2">
-            <label for="edit-record-interest" class="mb-1 block text-sm text-text-secondary">Interest (₱)</label>
-            <input id="edit-record-interest" :value="interest.text.value" :disabled="financialTermsLocked" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" @input="interest.onInput(($event.target as HTMLInputElement).value)" @blur="interest.onBlur" />
+            <div class="mb-1 flex items-center justify-between">
+              <label for="edit-record-interest" class="text-sm text-text-secondary">Interest (₱)</label>
+              <button v-if="interestTouched && !financialTermsLocked" type="button" class="press text-xs font-medium text-primary" @click="resetInterest">Reset</button>
+            </div>
+            <input id="edit-record-interest" :value="interest.text.value" :disabled="financialTermsLocked" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" @input="onInterestInput(($event.target as HTMLInputElement).value)" @blur="interest.onBlur" />
+            <p class="mt-1 text-xs text-text-secondary">Auto: 20% of principal</p>
           </div>
         </div>
       </section>
@@ -70,6 +78,48 @@ const interestCentavos = ref<number | null>(0)
 const principal = useMoneyInput(principalCentavos)
 const daily = useMoneyInput(dailyDueCentavos)
 const interest = useMoneyInput(interestCentavos)
+
+// House terms (spec §3): interest is 20% of principal and daily due is
+// (principal + interest) ÷ 60, same formula the add-loan form previews
+// (LoanFormSheet.vue). Kept in sync here until the user overrides one of
+// them, so editing Amount on an unlocked loan doesn't leave a stale daily
+// due behind -- Overview's "Expected today" sums daily_due_centavos
+// straight from the loans table (server/services/overview-service.ts).
+const interestTouched = ref(false)
+const dailyTouched = ref(false)
+
+function recomputeDaily() {
+  if (dailyTouched.value) return
+  dailyDueCentavos.value = computeStandardDailyDue(computeTotalPayable({
+    principalCentavos: principalCentavos.value ?? 0,
+    interestMode: 'added',
+    interestCentavos: interestCentavos.value ?? 0,
+  }))
+}
+function onPrincipalInput(value: string) {
+  principal.onInput(value)
+  if (!interestTouched.value) interestCentavos.value = computeStandardInterest(principalCentavos.value ?? 0)
+  recomputeDaily()
+}
+function onInterestInput(value: string) {
+  interestTouched.value = true
+  interest.onInput(value)
+  recomputeDaily()
+}
+function onDailyInput(value: string) {
+  dailyTouched.value = true
+  daily.onInput(value)
+}
+function resetInterest() {
+  interestTouched.value = false
+  interestCentavos.value = computeStandardInterest(principalCentavos.value ?? 0)
+  recomputeDaily()
+}
+function resetDaily() {
+  dailyTouched.value = false
+  recomputeDaily()
+}
+
 const original = ref('')
 const submitting = ref(false)
 const submitError = ref<string | null>(null)
@@ -90,6 +140,11 @@ watch(() => [props.open, props.loan?.id] as const, ([open]) => {
   principalCentavos.value = props.loan.principal_centavos
   dailyDueCentavos.value = props.loan.daily_due_centavos
   interestCentavos.value = props.loan.interest_centavos ?? 0
+  // Start each open in derived mode -- a loan already saved with
+  // non-standard terms should still re-derive once its Amount is edited,
+  // rather than freezing whatever was stored.
+  interestTouched.value = false
+  dailyTouched.value = false
   submitError.value = null
   nextTick(() => { original.value = JSON.stringify(currentValues()) })
 }, { immediate: true })

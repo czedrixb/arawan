@@ -6,7 +6,7 @@
 
 export type InterestMode = 'none' | 'added' | 'included'
 export type LoanReadiness = 'needs_review' | 'ready'
-export type DisplayStatus = 'needs_review' | 'upcoming' | 'active' | 'overdue' | 'completed' | 'archived'
+export type DisplayStatus = 'needs_review' | 'active' | 'overdue' | 'completed' | 'archived'
 export type PaymentKind = 'payment' | 'reversal'
 
 /** One row of the `loan_summary` view (supabase/migrations/0005_loan_summary_view.sql). */

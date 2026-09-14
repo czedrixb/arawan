@@ -14,7 +14,9 @@ test('matches workbook columns and displays interest as currency in Records and 
       '#', 'Name', 'Date Borrowed', 'Payment Start', 'Date Completed', 'Amount', 'Daily', 'Interest', 'Status',
     ])
     await expect(record.locator('td').nth(7)).toContainText('₱1,000.00')
-    await expect(page.getByRole('button', { name: 'Edit JINKY C. JUAMAN' })).toBeVisible()
+    await page.getByRole('button', { name: 'Actions for JINKY C. JUAMAN' }).click()
+    await expect(page.getByRole('menuitem', { name: 'Edit', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
     await page.screenshot({ path: testInfo.outputPath('records-workbook-columns.png'), fullPage: true })
   } else {
     await expect(record).toContainText('Date Borrowed')

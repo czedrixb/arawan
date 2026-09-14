@@ -6,7 +6,6 @@
 // which auto-imports into this file without a statement.
 export const STATUS_META: Record<DisplayStatus, { label: string; fg: string; bg: string }> = {
   needs_review: { label: 'Needs review', fg: 'var(--color-warning-fg)', bg: 'var(--color-warning-bg)' },
-  upcoming: { label: 'Upcoming', fg: 'var(--color-text-secondary)', bg: 'var(--color-surface-subtle)' },
   active: { label: 'Active', fg: 'var(--color-success-fg)', bg: 'var(--color-accent-soft)' },
   overdue: { label: 'Overdue', fg: 'var(--color-danger-fg)', bg: 'var(--color-danger-bg)' },
   completed: { label: 'Completed', fg: 'var(--color-success-fg)', bg: 'var(--color-success-bg)' },

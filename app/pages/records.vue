@@ -59,7 +59,7 @@
             <LoanListItem v-for="loan in data.rows" :key="loan.id" :loan="loan" @more="onMore" @edit="onEdit" @record-payment="onRecordPaymentFor" />
           </ul>
           <div class="hidden lg:block">
-            <LoanTable :loans="data.rows" :sort="filters.sort ?? 'borrowed_asc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @edit="onEdit" />
+            <LoanTable :loans="data.rows" :sort="filters.sort ?? 'sequence_asc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @edit="onEdit" @more="onMore" @record-payment="onRecordPaymentFor" @archive="onArchive" />
           </div>
           <div class="mt-3 flex items-center justify-between text-sm text-text-secondary">
             <span>{{ data.total }} records</span>
@@ -134,6 +134,19 @@ function onEdit(loan: LoanSummary) {
 }
 function onRecordPaymentFor(loan: any) {
   paymentLoan.value = loan
+}
+// Same archive/restore flow as the loan detail drawer (app/pages/records/[id].vue).
+async function onArchive(loan: LoanSummary) {
+  const confirm = useConfirm()
+  const ok = await confirm({
+    title: loan.archived_at ? 'Restore this loan?' : 'Archive this loan?',
+    message: loan.archived_at
+      ? 'It will reappear in active Records.'
+      : 'Archiving hides it from the default Records view. History is retained -- this does not mean it is repaid.',
+  })
+  if (!ok) return
+  await setLoanArchived(loan.id, !loan.archived_at, loan.version)
+  await refresh()
 }
 async function onExport() {
   // Excel export is a follow-up phase (spec phase 4) -- this pass ships

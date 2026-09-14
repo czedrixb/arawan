@@ -40,9 +40,13 @@
           <td class="px-4 py-3 text-right tabular-money"><MoneyText :centavos="loan.interest_centavos" /></td>
           <td class="px-4 py-3"><StatusPill :status="loan.display_status" /></td>
           <td class="px-4 py-3 text-right">
-            <button type="button" class="press rounded-control border border-control-border px-3 py-1.5 text-xs" :aria-label="`Edit ${loan.borrower_display_name}`" @click="$emit('edit', loan)">
-              Edit
-            </button>
+            <AppMenu :items="rowActions(loan)">
+              <template #trigger>
+                <button type="button" class="press rounded-full p-2 text-text-secondary hover:bg-surface-subtle" :aria-label="`Actions for ${loan.borrower_display_name}`">
+                  <PhDotsThreeVertical :size="18" weight="bold" />
+                </button>
+              </template>
+            </AppMenu>
           </td>
         </tr>
         <tr v-if="loans.length === 0">
@@ -54,11 +58,29 @@
 </template>
 
 <script setup lang="ts">
-import { PhCaretUpDown } from '@phosphor-icons/vue'
+import { PhCaretUpDown, PhDotsThreeVertical } from '@phosphor-icons/vue'
 import type { LoanFilters } from '#shared/schemas/loan'
 
 const props = defineProps<{ loans: any[]; sort: LoanFilters['sort'] }>()
-const emit = defineEmits<{ sort: [LoanFilters['sort']]; edit: [loan: any] }>()
+const emit = defineEmits<{
+  sort: [LoanFilters['sort']]
+  edit: [loan: any]
+  more: [loan: any]
+  'record-payment': [loan: any]
+  archive: [loan: any]
+}>()
+
+// Mirrors the mobile action set (LoanListItem.vue's swipe-reveal strip) so
+// the same actions are reachable on desktop -- previously the borrower
+// name link was the only discoverable way to open a row.
+function rowActions(loan: any) {
+  return [
+    { label: 'View details', onSelect: () => emit('more', loan) },
+    { label: 'Record payment', onSelect: () => emit('record-payment', loan) },
+    { label: 'Edit', onSelect: () => emit('edit', loan) },
+    { label: loan.archived_at ? 'Restore' : 'Archive', onSelect: () => emit('archive', loan) },
+  ]
+}
 
 const columns = [
   { key: 'sequence', label: '#', ascending: 'sequence_asc' as const, descending: 'sequence_desc' as const, numeric: true },
