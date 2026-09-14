@@ -65,7 +65,6 @@ watch(() => props.open, (isOpen) => {
 
 const statuses = [
   { value: 'all', label: 'All' },
-  { value: 'upcoming', label: 'Upcoming' },
   { value: 'active', label: 'Active' },
   { value: 'overdue', label: 'Overdue' },
   { value: 'needs_review', label: 'Needs review' },
@@ -82,7 +81,7 @@ function onApply() {
   openModel.value = false
 }
 function onClear() {
-  emit('apply', { status: 'all', archived: 'exclude', sort: 'borrowed_asc' })
+  emit('apply', { status: 'all', archived: 'exclude', sort: 'sequence_asc' })
   openModel.value = false
 }
 </script>

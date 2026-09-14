@@ -68,7 +68,7 @@ export type LoanRecordEdit = z.infer<typeof loanRecordEditSchema>
 
 export const loanFiltersSchema = z.object({
   q: z.string().trim().max(200).optional(),
-  status: z.enum(['all', 'active', 'completed', 'upcoming', 'overdue', 'needs_review']).default('all'),
+  status: z.enum(['all', 'active', 'completed', 'overdue', 'needs_review']).default('all'),
   archived: z.enum(['exclude', 'only', 'include']).default('exclude'),
   borrowedFrom: isoDate.optional(),
   borrowedTo: isoDate.optional(),
@@ -84,7 +84,7 @@ export const loanFiltersSchema = z.object({
     'interest_asc', 'interest_desc',
     'daily_asc', 'daily_desc',
     'status_asc', 'status_desc',
-  ]).default('borrowed_asc'),
+  ]).default('sequence_asc'),
   page: z.number().int().positive().default(1),
   pageSize: z.union([z.literal(25), z.literal(50), z.literal(100)]).default(25),
 })

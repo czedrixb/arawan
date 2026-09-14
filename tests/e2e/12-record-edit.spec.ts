@@ -29,7 +29,10 @@ test('edits and restores a workbook record from the Records row actions', async 
       await row.getByRole('button', { name: 'Show actions for JINKY C. JUAMAN' }).click()
       await row.getByRole('button', { name: 'Edit', exact: true }).click()
     } else {
-      await row.getByRole('button', { name: 'Edit JINKY C. JUAMAN' }).click()
+      // The desktop kebab menu is portalled, so its items render outside
+      // `row` -- query the menuitem at the page level, not row-scoped.
+      await row.getByRole('button', { name: 'Actions for JINKY C. JUAMAN' }).click()
+      await page.getByRole('menuitem', { name: 'Edit', exact: true }).click()
     }
 
     await expect(page.getByRole('heading', { name: 'Edit record' })).toBeVisible()
