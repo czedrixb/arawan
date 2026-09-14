@@ -10,7 +10,7 @@
       <NuxtLink :to="`/records/${loan.id}`" class="min-w-0 flex-1 px-4 py-3">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="truncate text-sm font-medium text-text-primary">{{ loan.source_sequence ?? '—' }}. {{ loan.borrower_display_name }}</p>
+            <p class="truncate text-sm font-medium text-text-primary">{{ rowNumber }}. {{ loan.borrower_display_name }}</p>
             <p class="mt-0.5 text-xs text-text-secondary">Date Borrowed · {{ formatDateDisplay(loan.borrowed_on) }}</p>
           </div>
           <StatusPill :status="loan.display_status" />
@@ -55,7 +55,7 @@
 <script setup lang="ts">
 import { PhDotsThreeVertical } from '@phosphor-icons/vue'
 
-const props = defineProps<{ loan: any }>()
+const props = defineProps<{ loan: any; rowNumber: number }>()
 const emit = defineEmits<{ more: [loan: any]; edit: [loan: any]; 'record-payment': [loan: any] }>()
 
 const revealWidth = 96

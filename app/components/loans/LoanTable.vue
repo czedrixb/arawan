@@ -25,8 +25,8 @@
         </tr>
       </thead>
       <tbody class="divide-y divide-border">
-        <tr v-for="loan in loans" :key="loan.id" class="hover:bg-surface-subtle">
-          <td class="px-4 py-3 text-text-secondary">{{ loan.source_sequence ?? '—' }}</td>
+        <tr v-for="(loan, i) in loans" :key="loan.id" class="hover:bg-surface-subtle">
+          <td class="px-4 py-3 text-text-secondary">{{ rowOffset + i + 1 }}</td>
           <td class="px-4 py-3">
             <NuxtLink :to="`/records/${loan.id}`" class="font-medium text-text-primary hover:underline">
               {{ loan.borrower_display_name }}
@@ -61,7 +61,7 @@
 import { PhCaretUpDown, PhDotsThreeVertical } from '@phosphor-icons/vue'
 import type { LoanFilters } from '#shared/schemas/loan'
 
-const props = defineProps<{ loans: any[]; sort: LoanFilters['sort'] }>()
+const props = defineProps<{ loans: any[]; rowOffset: number; sort: LoanFilters['sort'] }>()
 const emit = defineEmits<{
   sort: [LoanFilters['sort']]
   edit: [loan: any]
@@ -83,7 +83,10 @@ function rowActions(loan: any) {
 }
 
 const columns = [
-  { key: 'sequence', label: '#', ascending: 'sequence_asc' as const, descending: 'sequence_desc' as const, numeric: true },
+  // Not `numeric: true` -- the "#" cell is a positional row number rendered
+  // left-aligned (see the <td> above), so the header stays left-aligned to
+  // match instead of the right alignment numeric/money columns get.
+  { key: 'sequence', label: '#', ascending: 'sequence_asc' as const, descending: 'sequence_desc' as const },
   { key: 'name', label: 'Name', ascending: 'name_asc' as const, descending: 'name_desc' as const },
   { key: 'borrowed', label: 'Date Borrowed', ascending: 'borrowed_asc' as const, descending: 'borrowed_desc' as const },
   { key: 'paymentStart', label: 'Payment Start', ascending: 'payment_start_asc' as const, descending: 'payment_start_desc' as const },

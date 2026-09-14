@@ -135,29 +135,20 @@ test('a loan with a future payment start reads Active, and Upcoming is no longer
   }
 })
 
-test('Records opens in stable record-number order by default', async ({ page }, testInfo) => {
-  await page.goto('/records')
-  // Wait for the async loan list to actually render before reading rows --
-  // otherwise this can race the initial fetch and see an empty skeleton.
-  await expect(page.locator('table tbody tr:visible, ul li:visible').first()).toBeVisible()
-
-  let sequence: number[]
-  if (testInfo.project.name === 'desktop-chrome') {
-    const cells = await page.locator('table tbody tr td:first-child').allTextContents()
-    sequence = cells.filter((c) => c !== '—').map(Number)
-  } else {
-    const texts = await page.locator('ul li:visible').allTextContents()
-    sequence = texts
-      .map((t) => t.match(/^(\d+)\./)?.[1])
-      .filter((v): v is string => v !== undefined)
-      .map(Number)
-  }
-
+test('Records opens in stable record-number order by default', async ({ page, request }, testInfo) => {
+  // The visible "#" column is a positional row number (1, 2, 3...), not the
+  // underlying record-number sort key -- see 21-records-row-numbering.spec.ts
+  // for that. The default ordering guarantee itself is checked here against
+  // the API's source_sequence directly, which is what actually varies.
+  const list = await request.get('/api/loans?pageSize=100').then((r) => r.json())
+  const sequence = list.rows.map((row: any) => row.source_sequence).filter((n: number | null) => n !== null)
   expect(sequence.length).toBeGreaterThan(1)
   for (let i = 1; i < sequence.length; i++) {
     expect(sequence[i]).toBeGreaterThan(sequence[i - 1])
   }
-  await page.screenshot({ path: testInfo.outputPath('records-default-numbering.png'), fullPage: true })
+
+  await page.goto('/records')
+  await expect(page.locator('table tbody tr:visible, ul li:visible').first()).toBeVisible()
 })
 
 test('desktop row actions expose a kebab menu with View details, instead of only the name link', async ({ page }, testInfo) => {
