@@ -68,7 +68,12 @@ anything import-related; don't re-derive these facts from scratch.
 npm run dev              # nuxt dev
 npm run build             # production build (required for PWA/SW to exist)
 npm run typecheck         # vue-tsc via `nuxt typecheck`
-npm run db:push           # supabase db push (needs `supabase link` first)
+npm run db:start          # boots the local Supabase stack (Docker)
+npm run db:stop           # stops it
+npm run db:status         # local stack URLs/keys (Studio, API, DB, ...)
+npm run db:reset          # (re)applies supabase/migrations/*.sql + supabase/seed.sql, LOCAL only
+npm run db:push           # supabase db push -- BLOCKED unless ARAWAN_ALLOW_PROD=1, see below
+npm run gen:types         # regenerates app/types/database.types.ts from the LOCAL db
 npm run seed:workbook -- "path/to/ARAWAN copy.xlsx"   # dev-only, see the script's header comment
 npm run generate:brand -- "path/to/arawan-logo.png"   # regenerate public/icons, public/splash, public/brand
 npm run test:e2e          # playwright test (builds + boots .output itself)
@@ -77,7 +82,31 @@ npm run test:e2e          # playwright test (builds + boots .output itself)
 `.env` (gitignored) needs `NUXT_PUBLIC_SUPABASE_URL` / `NUXT_PUBLIC_SUPABASE_KEY`
 for the app, and `ARAWAN_OWNER_EMAIL`/`ARAWAN_OWNER_PASSWORD` for
 `tests/e2e/global-setup.ts` and `scripts/seed-workbook.mjs`'s owner lookup.
-See `.env.example`.
+See `.env.example` -- it ships filled in for the local stack by default; the
+hosted-project values are commented out below it.
+
+## Local Supabase stack
+
+This repo is **linked to the production project**
+(`supabase/.temp/linked-project.json`), so `supabase db push` and friends
+target it by default with no further confirmation. `npm run db:push` (and
+`gen:types`, which also shells out to the CLI) route through
+`scripts/guard-remote.mjs`, which refuses any command that would hit the
+linked/remote project (`db push`, `db pull`, `link`, anything with
+`--linked`/`--project-ref`) unless `ARAWAN_ALLOW_PROD=1` is set. Don't
+"fix" a blocked `db push` by calling `supabase db push` directly -- set
+`ARAWAN_ALLOW_PROD=1` only when you actually mean production.
+
+`supabase/seed.sql` provisions the local owner account by inserting directly
+into `auth.users` + `auth.identities` (plus `public.profiles`). Several
+`auth.users` text columns (`confirmation_token`, `recovery_token`, the
+email/phone-change token columns, `reauthentication_token`) are written as
+`''` rather than left `NULL` -- GoTrue reads them as non-nullable strings,
+and a `NULL` there breaks password sign-in with a generic error that makes
+every authenticated e2e spec silently self-skip instead of failing loudly.
+Read that file's own comments before changing it. `supabase/seed-owner.sql`
+is the equivalent for a **hosted** project, where the owner's auth user id
+isn't known ahead of time (created by hand in the dashboard) -- keep both.
 
 ## Testing
 
@@ -85,7 +114,10 @@ Every authenticated Playwright spec self-skips via `tests/e2e/helpers.ts`'s
 `hasSession()` when no dev Supabase project/owner is configured -- this is
 intentional, not a bug, so `npm run test:e2e` stays runnable in an
 environment with no real backend. Don't remove those guards; add real
-coverage behind them once a dev project exists.
+coverage behind them once a dev project exists. With `npm run db:start &&
+npm run db:reset` done first, `.env`'s local owner credentials sign in for
+real (`supabase/seed.sql` provisions the account) and these specs run
+instead of skipping.
 
 ## Not built yet (tracked, not forgotten)
 

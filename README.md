@@ -12,11 +12,43 @@ import wizard and Excel export are a deliberate follow-up -- see
 
 ## Setup
 
+### Local development (default)
+
+Runs entirely against a local Supabase stack (Postgres + Auth + Storage in
+Docker) so nothing ever touches production. Requires
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) (on
+Windows, with WSL2 -- `wsl --install`, reboot, then install Docker Desktop).
+
 ```
 npm install
-cp .env.example .env   # fill in your Supabase project's URL + anon key
-npm run db:push          # applies supabase/migrations/*.sql (needs `supabase link` first)
+cp .env.example .env       # the local-stack section is already filled in
+npm run db:start            # boots the local stack (first run pulls images, ~10-20 min)
+npm run db:reset             # applies supabase/migrations/*.sql, then supabase/seed.sql
+npm run dev
 ```
+
+`db:reset` provisions the single owner account for you (`supabase/seed.sql`)
+-- sign in at `/login` with `owner@arawan.local` / `arawan-local-dev` (both
+already in `.env.example`). No dashboard step, no `psql`. Studio (a web UI
+for the local DB) is at `http://127.0.0.1:54323`.
+
+`npm run db:stop` shuts the stack down; `npm run db:reset` re-applies
+migrations + seed at any point (e.g. after pulling a new migration).
+
+### Hosted project (production)
+
+```
+npm install
+cp .env.example .env
+# uncomment and fill in the "Hosted project" section instead
+ARAWAN_ALLOW_PROD=1 npm run db:push   # applies supabase/migrations/*.sql (needs `supabase link` first)
+```
+
+`npm run db:push` on its own **refuses to run** -- this repo is linked to
+production (`supabase/.temp/linked-project.json`), so
+`scripts/guard-remote.mjs` blocks it and every other remote-targeting
+Supabase CLI command unless `ARAWAN_ALLOW_PROD=1` is set. That's deliberate,
+not a bug.
 
 Then provision exactly one owner account in the Supabase dashboard
 (Authentication -> Add user) with public signup left **disabled**, and seed
@@ -49,8 +81,10 @@ npm run test:e2e
 Runs against a production build on a fixed port (`scripts/e2e-server.mjs`).
 Specs that need a real signed-in owner self-skip if `ARAWAN_OWNER_EMAIL` /
 `ARAWAN_OWNER_PASSWORD` aren't set in `.env`, or if sign-in against them
-fails -- so this is safe to run before a dev Supabase project exists;
-it just won't exercise the authenticated flows yet.
+fails -- so this is safe to run before the local stack is up; it just won't
+exercise the authenticated flows yet. With `npm run db:start && npm run
+db:reset` done first (see "Local development" above), `.env`'s local owner
+credentials sign in for real and the full suite runs.
 
 ## Regenerating brand assets
 

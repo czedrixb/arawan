@@ -56,10 +56,10 @@
         />
         <template v-else>
           <ul class="overflow-hidden rounded-card border border-border lg:hidden">
-            <LoanListItem v-for="loan in data.rows" :key="loan.id" :loan="loan" @more="onMore" @edit="onEdit" @record-payment="onRecordPaymentFor" />
+            <LoanListItem v-for="(loan, i) in data.rows" :key="loan.id" :loan="loan" :row-number="rowOffset + i + 1" @more="onMore" @edit="onEdit" @record-payment="onRecordPaymentFor" />
           </ul>
           <div class="hidden lg:block">
-            <LoanTable :loans="data.rows" :sort="filters.sort ?? 'sequence_asc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @edit="onEdit" @more="onMore" @record-payment="onRecordPaymentFor" @archive="onArchive" />
+            <LoanTable :loans="data.rows" :row-offset="rowOffset" :sort="filters.sort ?? 'sequence_asc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @edit="onEdit" @more="onMore" @record-payment="onRecordPaymentFor" @archive="onArchive" />
           </div>
           <div class="mt-3 flex items-center justify-between text-sm text-text-secondary">
             <span>{{ data.total }} records</span>
@@ -96,6 +96,9 @@ const { filters, update, activeFilterCount } = useRecordFilters()
 const searchInput = ref(filters.value.q ?? '')
 const page = computed(() => filters.value.page ?? 1)
 const pageSize = computed(() => filters.value.pageSize ?? 25)
+// Records' "#" column is a positional row number, not the DB's permanent
+// source_sequence -- see LoanTable.vue/LoanListItem.vue for why.
+const rowOffset = computed(() => (page.value - 1) * pageSize.value)
 
 const { data, pending, error, refresh } = useLoanList(filters)
 

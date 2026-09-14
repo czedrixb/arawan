@@ -1,3 +1,7 @@
+-- For LOCAL development, use `supabase/seed.sql` instead (runs automatically
+-- on `supabase db reset`, no manual psql step). This file is for a HOSTED
+-- project only, where the owner's auth user id isn't known ahead of time.
+--
 -- Run this ONCE against the target Supabase project after the owner's
 -- auth user has been created (Dashboard -> Authentication -> Add user,
 -- or `supabase auth admin` -- public signup must stay disabled). This

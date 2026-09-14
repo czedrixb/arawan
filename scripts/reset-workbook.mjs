@@ -14,6 +14,16 @@ if (!workbookPath || !ownerEmail) {
   process.exit(1)
 }
 
+// This script only ever prints a path to run through psql -- it can't stop
+// you from pointing psql at production. SUPABASE_DB_URL is the one signal
+// available here, so flag it loudly (not fatally: SUPABASE_DB_URL is
+// optional and the caller may pass a different connection string directly
+// to psql) if it looks like anything other than the local stack.
+if (process.env.SUPABASE_DB_URL && !/(127\.0\.0\.1|localhost)/.test(process.env.SUPABASE_DB_URL)) {
+  console.error('WARNING: SUPABASE_DB_URL does not look like the local stack (127.0.0.1/localhost).')
+  console.error('This script replaces ALL of the owner\'s records -- never run the generated SQL against production.')
+}
+
 function readWorkbookGrid(buffer) {
   let end = buffer.length - 22
   while (end > 0 && buffer.readUInt32LE(end) !== 0x06054b50) end--
