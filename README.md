@@ -6,13 +6,28 @@ Node-compatible host.
 
 This build covers the core app: authentication, borrowers/loans, the
 payment ledger (with reversals and opening-balance reconciliation),
-Overview metrics, and an installable PWA with ARAWAN branding. The Excel
-import wizard and Excel export are a deliberate follow-up -- see
+Overview metrics, filtered Excel export, and an installable PWA with ARAWAN branding. The Excel
+import wizard is a deliberate follow-up -- see
 "What's not built yet" below.
 
 ## Setup
 
-### Local development (default)
+### Local development with native PostgreSQL (recommended)
+
+PostgreSQL 16+ can run directly on the host without Docker. Copy `.env.example`
+to `.env`, set the local PostgreSQL administrator password in
+`ARAWAN_NATIVE_ADMIN_URL`, then run:
+
+```powershell
+npm run db:native:init
+npm run dev
+```
+
+Native mode is guarded to loopback database URLs. Production remains on
+Supabase unless `ARAWAN_BACKEND_MODE=native-postgres` is explicitly set.
+The local owner password can be replaced with `npm run db:native:reset-owner`.
+
+### Local Supabase development (optional)
 
 Runs entirely against a local Supabase stack (Postgres + Auth + Storage in
 Docker) so nothing ever touches production. Requires
@@ -104,7 +119,7 @@ real-device verification).
 
 ## What's not built yet
 
-- **Excel import/export** (spec phase 4). `docs/workbook-analysis.md`
+- **Excel import** (spec phase 4). `docs/workbook-analysis.md`
   records everything verified about the real source workbook in advance --
   including three corrections to the written spec -- so this doesn't need
   to be re-derived when it's picked up.

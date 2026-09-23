@@ -18,6 +18,14 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/supabase', '@vite-pwa/nuxt'],
 
+  runtimeConfig: {
+    databaseUrl: process.env.ARAWAN_DATABASE_URL,
+    nativeAdminUrl: process.env.ARAWAN_NATIVE_ADMIN_URL,
+    public: {
+      backendMode: process.env.ARAWAN_BACKEND_MODE ?? 'supabase',
+    },
+  },
+
   // Every component in app/components/{shell,loans,payments,shared}/ is
   // written and referenced by its bare filename (<PageHeader>, not
   // <ShellPageHeader>). Without this, Nuxt's default directory-prefixed

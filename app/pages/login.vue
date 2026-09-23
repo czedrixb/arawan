@@ -51,19 +51,19 @@ const submitting = ref(false)
 const error = ref<string | null>(null)
 const recoverySent = ref(false)
 
-const client = useSupabaseClient()
 const route = useRoute()
 
 async function onSubmit() {
   submitting.value = true
   error.value = null
-  const { error: signInError } = await client.auth.signInWithPassword({ email: email.value, password: password.value })
-  submitting.value = false
-  if (signInError) {
+  try {
+    await signInArawan(email.value, password.value)
+  } catch {
+    submitting.value = false
     error.value = 'Incorrect email or password.'
     return
   }
-  await waitForSupabaseUser()
+  submitting.value = false
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
   await navigateTo(redirect)
 }
@@ -73,7 +73,11 @@ async function onForgotPassword() {
     error.value = 'Enter your email above first.'
     return
   }
-  const { error: resetError } = await client.auth.resetPasswordForEmail(email.value, {
+  if (useRuntimeConfig().public.backendMode === 'native-postgres') {
+    error.value = 'Use npm run db:native:reset-owner to reset the local password.'
+    return
+  }
+  const { error: resetError } = await useSupabaseClient().auth.resetPasswordForEmail(email.value, {
     redirectTo: `${window.location.origin}/confirm`,
   })
   if (!resetError) recoverySent.value = true

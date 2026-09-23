@@ -31,7 +31,7 @@ export async function createLoan(input: Record<string, unknown>) {
 }
 
 export async function patchLoan(id: string, patch: Record<string, unknown>) {
-  const loan = await $fetch(`/api/loans/${id}`, { method: 'PATCH', body: patch })
+  const loan = await $fetch(`/api/loans/${id}` as any, { method: 'PATCH', body: patch })
   await syncRecordData({ loanId: id })
   return loan
 }
