@@ -5,7 +5,7 @@ export default defineNuxtRouteMiddleware((to) => {
   const ready = useAuthReady()
   if (!ready.value) return // app.vue is showing AppLaunchScreen; decide nothing yet
 
-  const user = useSupabaseUser()
+  const user = useArawanUser()
   const isAuthRoute = to.path === '/login' || to.path.startsWith('/confirm')
 
   if (!user.value && !isAuthRoute) {

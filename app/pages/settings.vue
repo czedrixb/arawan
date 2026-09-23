@@ -67,8 +67,8 @@
       <section class="rounded-card border border-border bg-surface p-4 shadow-card">
         <h2 class="mb-2 text-sm font-semibold text-text-primary">Backup &amp; export</h2>
         <p class="text-sm text-text-secondary">
-          Excel export is coming in a follow-up update. Your data lives in Supabase Postgres -- ask your database
-          administrator about backup/restore policy for the linked project.
+          Export the current Records results as an Excel workbook from the Records page. This portable export is
+          separate from your PostgreSQL backup and restore policy.
         </p>
       </section>
     </div>
@@ -76,15 +76,13 @@
 </template>
 
 <script setup lang="ts">
-const user = useSupabaseUser()
-const client = useSupabaseClient()
+const user = useArawanUser()
 const { setting: motionSetting, set: setMotion } = useReducedMotionSetting()
 const { canPrompt, isIos, installed, promptInstall } = useInstallPrompt()
 const { needRefresh, updateNow } = usePwa()
 
 const { data: profile } = await useAsyncData<Profile | null>('profile', async () => {
-  const { data } = await client.from('profiles').select('*').single()
-  return data
+  return await $fetch<Profile>('/api/profile')
 })
 
 const defaultWeekdays = ref<number[]>(profile.value?.default_collection_weekdays ?? [1, 2, 3, 4, 5, 6, 7])
@@ -106,12 +104,12 @@ function toggleDefaultWeekday(day: number) {
     : [...defaultWeekdays.value, day].sort()
 }
 async function saveDefaults() {
-  await client.from('profiles').update({ default_collection_weekdays: defaultWeekdays.value }).eq('id', user.value!.id)
+  profile.value = await $fetch<Profile>('/api/profile', { method: 'PATCH', body: { defaultCollectionWeekdays: defaultWeekdays.value } })
   useToast().show('Defaults saved')
 }
 
 async function onSignOut() {
-  await client.auth.signOut()
+  await signOutArawan()
   // Full reload, not an SPA navigation -- guarantees no user-scoped
   // client state survives sign-out (spec §12).
   window.location.href = '/login'

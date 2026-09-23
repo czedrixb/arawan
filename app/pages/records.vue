@@ -2,9 +2,9 @@
   <div>
     <PageHeader title="Records">
       <template #actions>
-        <div class="hidden gap-2 lg:flex">
-          <button type="button" class="press rounded-control border border-control-border px-3 py-2 text-sm" @click="onExport">Export</button>
-          <button type="button" class="press rounded-control bg-primary px-4 py-2 text-sm font-semibold text-white" @click="addOpen = true">+ Add loan</button>
+        <div class="flex gap-2">
+          <button type="button" class="press rounded-control border border-control-border px-3 py-2 text-sm disabled:opacity-60" :disabled="exporting" @click="onExport">{{ exporting ? 'Exporting…' : 'Export' }}</button>
+          <button type="button" class="press hidden rounded-control bg-primary px-4 py-2 text-sm font-semibold text-white lg:block" @click="addOpen = true">+ Add loan</button>
         </div>
       </template>
     </PageHeader>
@@ -122,6 +122,7 @@ const filterOpen = ref(false)
 const addOpen = ref(false)
 const paymentLoan = ref<any>(null)
 const editLoan = ref<LoanSummary | null>(null)
+const exporting = ref(false)
 
 const mobileSegments = [
   { value: 'all', label: 'All' },
@@ -152,8 +153,31 @@ async function onArchive(loan: LoanSummary) {
   await refresh()
 }
 async function onExport() {
-  // Excel export is a follow-up phase (spec phase 4) -- this pass ships
-  // the core app; the button is present but explains the limitation.
-  useToast().show('Export is coming in a follow-up update', 'info')
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const query = new URLSearchParams()
+    for (const [key, value] of Object.entries(filters.value)) {
+      if (value !== undefined && key !== 'page' && key !== 'pageSize') query.set(key, String(value))
+    }
+    const response = await fetch(`/api/loans/export?${query.toString()}`)
+    if (!response.ok) throw new Error('Export request failed')
+    const blob = await response.blob()
+    const disposition = response.headers.get('content-disposition') ?? ''
+    const filename = disposition.match(/filename="([^"]+)"/)?.[1] ?? 'ARAWAN-export.xlsx'
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = filename
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
+    useToast().show(`Exported ${data.value?.total ?? 0} records`)
+  } catch {
+    useToast().show('Export failed. Please try again.', 'info')
+  } finally {
+    exporting.value = false
+  }
 }
 </script>
