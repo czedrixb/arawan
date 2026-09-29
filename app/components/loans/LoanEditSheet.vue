@@ -8,6 +8,10 @@
             <label for="edit-record-name" class="mb-1 block text-sm text-text-secondary">Name</label>
             <input id="edit-record-name" v-model="displayName" required maxlength="200" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
           </div>
+          <div>
+            <label for="edit-record-phone" class="mb-1 block text-sm text-text-secondary">Phone number</label>
+            <input id="edit-record-phone" v-model="phone" type="tel" maxlength="40" autocomplete="tel" :disabled="loadingBorrower" :placeholder="loadingBorrower ? 'Loading…' : 'Optional'" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" />
+          </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label for="edit-record-borrowed" class="mb-1 block text-sm text-text-secondary">Date Borrowed</label>
@@ -57,8 +61,8 @@
     </form>
 
     <template #footer>
-      <button type="button" :disabled="submitting" class="press w-full rounded-control bg-primary px-4 py-3 text-sm font-semibold text-white disabled:opacity-60" @click="onSubmit">
-        {{ submitting ? 'Saving…' : 'Save changes' }}
+      <button type="button" :disabled="submitting || loadingBorrower" class="press w-full rounded-control bg-primary px-4 py-3 text-sm font-semibold text-white disabled:opacity-60" @click="onSubmit">
+        {{ submitting ? 'Saving…' : loadingBorrower ? 'Loading…' : 'Save changes' }}
       </button>
     </template>
   </AppSheet>
@@ -69,6 +73,7 @@ const props = defineProps<{ open: boolean; loan: LoanSummary | null }>()
 const emit = defineEmits<{ 'update:open': [boolean]; saved: [] }>()
 
 const displayName = ref('')
+const phone = ref('')
 const borrowedOn = ref('')
 const paymentStartOn = ref('')
 const dueOn = ref('')
@@ -121,6 +126,10 @@ function resetDaily() {
 }
 
 const original = ref('')
+const originalRecord = ref('')
+const originalPhone = ref<string | null>(null)
+const borrowerVersion = ref<number | null>(null)
+const loadingBorrower = ref(false)
 const submitting = ref(false)
 const submitError = ref<string | null>(null)
 const financialTermsLocked = computed(() => !!props.loan && props.loan.financial_terms_locked === true)
@@ -131,9 +140,14 @@ const dateError = computed(() => {
   return null
 })
 
-watch(() => [props.open, props.loan?.id] as const, ([open]) => {
+let loadSequence = 0
+watch(() => [props.open, props.loan?.id] as const, async ([open]) => {
   if (!open || !props.loan) return
+  const sequence = ++loadSequence
   displayName.value = props.loan.borrower_display_name
+  phone.value = ''
+  borrowerVersion.value = null
+  loadingBorrower.value = true
   borrowedOn.value = props.loan.borrowed_on ?? ''
   paymentStartOn.value = props.loan.payment_start_on ?? ''
   dueOn.value = props.loan.due_on ?? ''
@@ -146,10 +160,23 @@ watch(() => [props.open, props.loan?.id] as const, ([open]) => {
   interestTouched.value = false
   dailyTouched.value = false
   submitError.value = null
-  nextTick(() => { original.value = JSON.stringify(currentValues()) })
+  try {
+    const borrower = await $fetch<Borrower>(`/api/borrowers/${props.loan.borrower_id}`)
+    if (sequence !== loadSequence || !props.open) return
+    phone.value = borrower.phone ?? ''
+    originalPhone.value = borrower.phone
+    borrowerVersion.value = borrower.version
+    await nextTick()
+    originalRecord.value = JSON.stringify(recordValues())
+    original.value = JSON.stringify(currentValues())
+  } catch (err: any) {
+    if (sequence === loadSequence) submitError.value = err?.data?.statusMessage ?? 'Could not load borrower details.'
+  } finally {
+    if (sequence === loadSequence) loadingBorrower.value = false
+  }
 }, { immediate: true })
 
-function currentValues() {
+function recordValues() {
   return {
     displayName: displayName.value.trim(), borrowedOn: borrowedOn.value,
     paymentStartOn: paymentStartOn.value, dueOn: dueOn.value,
@@ -158,9 +185,14 @@ function currentValues() {
   }
 }
 
+function currentValues() {
+  return { ...recordValues(), phone: phone.value.trim() || null }
+}
+
 async function onSubmit() {
-  if (!props.loan || submitting.value) return
+  if (!props.loan || submitting.value || loadingBorrower.value) return
   submitError.value = null
+  if (borrowerVersion.value === null) { submitError.value = 'Could not load borrower details.'; return }
   if (dateError.value) { submitError.value = dateError.value; return }
   if (principalCentavos.value === null || dailyDueCentavos.value === null || interestCentavos.value === null) {
     submitError.value = 'Enter valid loan amounts.'
@@ -168,14 +200,25 @@ async function onSubmit() {
   }
   submitting.value = true
   try {
-    await $fetch(`/api/loans/${props.loan.id}/details`, {
-      method: 'PATCH',
-      body: {
-        version: props.loan.version,
-        borrowerVersion: props.loan.borrower_version,
-        ...currentValues(),
-      },
-    })
+    let currentBorrowerVersion = borrowerVersion.value
+    if (JSON.stringify(recordValues()) !== originalRecord.value) {
+      const savedLoan = await $fetch<LoanSummary>(`/api/loans/${props.loan.id}/details`, {
+        method: 'PATCH',
+        body: {
+          version: props.loan.version,
+          borrowerVersion: currentBorrowerVersion,
+          ...recordValues(),
+        },
+      })
+      currentBorrowerVersion = savedLoan.borrower_version
+    }
+    const nextPhone = phone.value.trim() || null
+    if (nextPhone !== originalPhone.value) {
+      await $fetch(`/api/borrowers/${props.loan.borrower_id}`, {
+        method: 'PATCH',
+        body: { version: currentBorrowerVersion, phone: nextPhone },
+      })
+    }
     await syncRecordData({ loanId: props.loan.id })
     emit('saved')
     emit('update:open', false)
