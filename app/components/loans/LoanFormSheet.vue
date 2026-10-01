@@ -60,22 +60,30 @@
           <input id="loan-principal" :value="principal.text.value" type="text" inputmode="decimal" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="onPrincipalInput(($event.target as HTMLInputElement).value)" @blur="principal.onBlur" />
         </div>
 
+        <fieldset class="mt-3">
+          <legend class="mb-1 text-sm text-text-secondary">Interest terms</legend>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="press rounded-control border px-3 py-2 text-sm" :class="termsMode === 'standard' ? 'border-primary bg-accent-soft text-primary' : 'border-control-border'" @click="setTermsMode('standard')">Standard 20%</button>
+            <button type="button" class="press rounded-control border px-3 py-2 text-sm" :class="termsMode === 'none' ? 'border-primary bg-accent-soft text-primary' : 'border-control-border'" @click="setTermsMode('none')">No interest</button>
+          </div>
+        </fieldset>
+
         <div class="mt-3 grid grid-cols-2 gap-3">
           <div>
             <div class="mb-1 flex items-center justify-between">
               <label for="loan-interest" class="text-sm text-text-secondary">Interest (₱)</label>
               <button v-if="interestTouched" type="button" class="press text-xs font-medium text-primary" @click="resetInterest">Reset</button>
             </div>
-            <input id="loan-interest" :value="interest.text.value" type="text" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="onInterestInput(($event.target as HTMLInputElement).value)" @blur="interest.onBlur" />
-            <p class="mt-1 text-xs text-text-secondary">Auto: 20% of principal</p>
+            <input id="loan-interest" :value="interest.text.value" type="text" inputmode="decimal" :disabled="termsMode === 'none'" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:bg-surface-subtle disabled:opacity-70" @input="onInterestInput(($event.target as HTMLInputElement).value)" @blur="interest.onBlur" />
+            <p class="mt-1 text-xs text-text-secondary">{{ termsMode === 'none' ? 'No interest added' : 'Auto: 20% of principal' }}</p>
           </div>
           <div>
             <div class="mb-1 flex items-center justify-between">
               <label for="loan-daily-due" class="text-sm text-text-secondary">Daily due (₱)</label>
               <button v-if="dailyTouched" type="button" class="press text-xs font-medium text-primary" @click="resetDaily">Reset</button>
             </div>
-            <input id="loan-daily-due" :value="daily.text.value" type="text" inputmode="decimal" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="onDailyInput(($event.target as HTMLInputElement).value)" @blur="daily.onBlur" />
-            <p class="mt-1 text-xs text-text-secondary">Auto: (principal + interest) ÷ 60</p>
+            <input id="loan-daily-due" :value="daily.text.value" type="text" inputmode="decimal" required :readonly="termsMode === 'none'" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base read-only:bg-surface-subtle" @input="onDailyInput(($event.target as HTMLInputElement).value)" @blur="daily.onBlur" />
+            <p class="mt-1 text-xs text-text-secondary">{{ termsMode === 'none' ? 'Auto: principal ÷ collection days' : 'Auto: (principal + interest) ÷ 60' }}</p>
           </div>
         </div>
       </section>
@@ -90,8 +98,8 @@
           </div>
           <div>
             <label for="loan-payment-start" class="mb-1 block text-sm text-text-secondary">Payment start</label>
-            <input id="loan-payment-start" v-model="paymentStartOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="paymentStartTouched = true" />
-            <p class="mt-1 text-xs text-text-secondary">Auto: day after borrowed on</p>
+            <input id="loan-payment-start" v-model="paymentStartOn" type="date" required :disabled="termsMode === 'none'" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:bg-surface-subtle disabled:opacity-70" @input="paymentStartTouched = true" />
+            <p class="mt-1 text-xs text-text-secondary">{{ termsMode === 'none' ? 'Same as borrowed date' : 'Auto: day after borrowed on' }}</p>
           </div>
         </div>
         <label class="mb-1 mt-3 block text-sm text-text-secondary">Collection days</label>
@@ -110,7 +118,7 @@
         <div class="mt-3">
           <label for="loan-due-on" class="mb-1 block text-sm text-text-secondary">Due date</label>
           <input id="loan-due-on" v-model="dueOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" @input="dueOnTouched = true" />
-          <p class="mt-1 text-xs text-text-secondary">Auto: 60th collection day from payment start</p>
+          <p class="mt-1 text-xs text-text-secondary">{{ termsMode === 'none' ? 'Sets the inclusive date range for the daily amount' : 'Auto: 60th collection day from payment start' }}</p>
         </div>
       </section>
 
@@ -121,7 +129,7 @@
           <dt class="text-text-secondary">Total payable</dt>
           <dd class="text-right tabular-money">{{ formatCentavos(preview.totalPayableCentavos) }}</dd>
           <dt class="text-text-secondary">Term</dt>
-          <dd class="text-right">60 days</dd>
+          <dd class="text-right">{{ termLabel }}</dd>
           <dt class="text-text-secondary">Installments</dt>
           <dd class="text-right">{{ preview.installmentCount }}</dd>
           <dt class="text-text-secondary">Final installment</dt>
@@ -129,7 +137,8 @@
           <dt class="text-text-secondary">Due date</dt>
           <dd class="text-right">{{ formatDateDisplay(preview.proposedDueOn) }}</dd>
         </dl>
-        <p v-if="dailyUndershoots" class="mt-2 text-xs text-danger-fg">60 payments won't cover the total — raise the daily due.</p>
+        <p v-if="dailyUndershoots" class="mt-2 text-xs text-danger-fg">60 payments won't cover the total - raise the daily due.</p>
+        <p v-if="dateRangeError" class="mt-2 text-xs text-danger-fg">{{ dateRangeError }}</p>
       </section>
 
       <p v-if="submitError" role="alert" class="text-sm text-danger-fg">{{ submitError }}</p>
@@ -187,16 +196,19 @@ const interestCentavosModel = ref<number | null>(0)
 const principal = useMoneyInput(principalCentavos)
 const daily = useMoneyInput(dailyDueCentavos)
 const interest = useMoneyInput(interestCentavosModel)
+const termsMode = ref<'standard' | 'none'>('standard')
 
-// Every new loan carries the house's standard terms: 20% interest, a fixed
-// 60-day term. Interest and daily due auto-fill from those terms until the
-// user overrides them; the mode is always 'added' unless interest is zeroed
-// (see onSubmit -- loanInputSchema requires interestCentavos > 0 for 'added').
+// Standard terms remain 20% over 60 installments. No-interest terms use
+// the inclusive borrowed-to-due date range and enabled collection weekdays.
 const interestTouched = ref(false)
 const dailyTouched = ref(false)
 
 function onPrincipalInput(value: string) {
   principal.onInput(value)
+  if (termsMode.value === 'none') {
+    recomputeNoInterestTerms()
+    return
+  }
   if (!interestTouched.value) interestCentavosModel.value = computeStandardInterest(principalCentavos.value ?? 0)
   if (!dailyTouched.value) dailyDueCentavos.value = computeStandardDailyDue(computeTotalPayable({
     principalCentavos: principalCentavos.value ?? 0,
@@ -205,6 +217,7 @@ function onPrincipalInput(value: string) {
   }))
 }
 function onInterestInput(value: string) {
+  if (termsMode.value === 'none') return
   interestTouched.value = true
   interest.onInput(value)
   if (!dailyTouched.value) dailyDueCentavos.value = computeStandardDailyDue(computeTotalPayable({
@@ -214,6 +227,7 @@ function onInterestInput(value: string) {
   }))
 }
 function onDailyInput(value: string) {
+  if (termsMode.value === 'none') return
   dailyTouched.value = true
   daily.onInput(value)
 }
@@ -235,13 +249,44 @@ function resetDaily() {
   }))
 }
 
+function setTermsMode(mode: 'standard' | 'none') {
+  if (termsMode.value === mode) return
+  termsMode.value = mode
+  interestTouched.value = false
+  dailyTouched.value = false
+  if (mode === 'none') {
+    paymentStartTouched.value = false
+    recomputeNoInterestTerms()
+    return
+  }
+
+  paymentStartOn.value = addDaysIso(borrowedOn.value, 1)
+  paymentStartTouched.value = false
+  interestCentavosModel.value = computeStandardInterest(principalCentavos.value ?? 0)
+  dailyDueCentavos.value = computeStandardDailyDue(computeTotalPayable({
+    principalCentavos: principalCentavos.value ?? 0,
+    interestMode: 'added',
+    interestCentavos: interestCentavosModel.value,
+  }))
+  dueOnTouched.value = false
+  dueOn.value = previewSchedule({
+    principalCentavos: principalCentavos.value ?? 0,
+    dailyDueCentavos: dailyDueCentavos.value || 1,
+    interestMode: 'added',
+    interestCentavos: interestCentavosModel.value,
+    paymentStartOn: paymentStartOn.value,
+    collectionWeekdays: collectionWeekdays.value.length ? collectionWeekdays.value : [1, 2, 3, 4, 5, 6, 7],
+  }).proposedDueOn
+}
+
 const borrowedOn = ref(todayIso())
 const paymentStartOn = ref(addDaysIso(todayIso(), 1))
 const paymentStartTouched = ref(false)
 const dueOn = ref(todayIso())
 const dueOnTouched = ref(false)
 watch(borrowedOn, (v) => {
-  if (!paymentStartTouched.value) paymentStartOn.value = addDaysIso(v, 1)
+  if (termsMode.value === 'none') paymentStartOn.value = v
+  else if (!paymentStartTouched.value) paymentStartOn.value = addDaysIso(v, 1)
 })
 
 const collectionWeekdays = ref<number[]>([1, 2, 3, 4, 5, 6, 7])
@@ -260,20 +305,50 @@ function toggleWeekday(day: number) {
     : [...collectionWeekdays.value, day].sort()
 }
 
-const preview = computed(() =>
-  previewSchedule({
+const noInterestCollectionDays = computed(() =>
+  collectionDaysBetween(borrowedOn.value, dueOn.value, collectionWeekdays.value),
+)
+function recomputeNoInterestTerms() {
+  if (termsMode.value !== 'none') return
+  interestCentavosModel.value = 0
+  paymentStartOn.value = borrowedOn.value
+  dailyDueCentavos.value = computeDateRangeDailyDue(principalCentavos.value ?? 0, noInterestCollectionDays.value)
+}
+watch([dueOn, collectionWeekdays], recomputeNoInterestTerms, { deep: true })
+
+const preview = computed(() => {
+  if (termsMode.value === 'none') {
+    const total = principalCentavos.value ?? 0
+    const count = noInterestCollectionDays.value
+    const dailyAmount = dailyDueCentavos.value ?? 0
+    return {
+      totalPayableCentavos: total,
+      installmentCount: count,
+      finalInstallmentCentavos: count > 0 ? Math.max(0, total - dailyAmount * (count - 1)) : 0,
+      proposedDueOn: dueOn.value,
+    }
+  }
+  return previewSchedule({
     principalCentavos: principalCentavos.value ?? 0,
     dailyDueCentavos: dailyDueCentavos.value ?? 1,
     interestMode: 'added',
     interestCentavos: interestCentavosModel.value ?? 0,
     paymentStartOn: paymentStartOn.value,
     collectionWeekdays: collectionWeekdays.value.length ? collectionWeekdays.value : [1, 2, 3, 4, 5, 6, 7],
-  }),
-)
-watch(preview, (p) => {
-  if (!dueOnTouched.value) dueOn.value = p.proposedDueOn
+  })
 })
-const dailyUndershoots = computed(() => (dailyDueCentavos.value ?? 0) * 60 < preview.value.totalPayableCentavos)
+watch(preview, (p) => {
+  if (termsMode.value === 'standard' && !dueOnTouched.value) dueOn.value = p.proposedDueOn
+})
+const dailyUndershoots = computed(() => termsMode.value === 'standard' && (dailyDueCentavos.value ?? 0) * 60 < preview.value.totalPayableCentavos)
+const termLabel = computed(() => termsMode.value === 'none' ? `${noInterestCollectionDays.value} collection days` : '60 days')
+const dateRangeError = computed(() => {
+  if (termsMode.value !== 'none') return null
+  if (dueOn.value < borrowedOn.value) return 'Due date must be on or after the borrowed date.'
+  if (collectionWeekdays.value.length === 0) return 'Select at least one collection day.'
+  if (noInterestCollectionDays.value === 0) return 'The date range has no enabled collection days.'
+  return null
+})
 
 const isDirty = computed(
   () =>
@@ -301,6 +376,7 @@ watch(
     principalCentavos.value = null
     dailyDueCentavos.value = null
     interestCentavosModel.value = 0
+    termsMode.value = 'standard'
     interestTouched.value = false
     dailyTouched.value = false
     const today = todayIso()
@@ -327,6 +403,10 @@ async function onSubmit() {
     submitError.value = 'Select a borrower or enter a new one.'
     return
   }
+  if (dateRangeError.value) {
+    submitError.value = dateRangeError.value
+    return
+  }
   submitting.value = true
   try {
     const interestCentavos = interestCentavosModel.value ?? 0
@@ -334,7 +414,7 @@ async function onSubmit() {
       borrower,
       principalCentavos: principalCentavos.value,
       dailyDueCentavos: dailyDueCentavos.value,
-      interestMode: interestCentavos > 0 ? 'added' : 'none',
+      interestMode: termsMode.value === 'none' ? 'none' : interestCentavos > 0 ? 'added' : 'none',
       interestCentavos,
       borrowedOn: borrowedOn.value,
       paymentStartOn: paymentStartOn.value,

@@ -25,9 +25,9 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   const reversedIds = new Set((payments ?? []).filter((p) => p.kind === 'reversal').map((p) => p.reverses_id))
   const netPayments = (payments ?? []).filter((p) => p.kind === 'payment' && !reversedIds.has(p.id))
 
-  const principalRecordedCentavos = sum(activeLoans.map((l) => l.principal_centavos ?? 0))
-  const interestRecordedCentavos = sum(activeLoans.map((l) => l.interest_centavos ?? 0))
-  const totalPayableCentavos = sum(activeLoans.map((l) => l.total_payable_centavos ?? 0))
+  const principalRecordedCentavos = sum(activeLoans.map((l) => l.principal_centavos))
+  const interestRecordedCentavos = sum(activeLoans.map((l) => l.interest_centavos))
+  const totalPayableCentavos = sum(activeLoans.map((l) => l.total_payable_centavos))
 
   const monthStart = monthStartIso(today)
   const collectedInPeriodCentavos = sum(
@@ -35,7 +35,7 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   )
 
   const readyLoans = activeLoans.filter((l) => l.readiness === 'ready')
-  const outstandingTodayCentavos = sum(readyLoans.map((l) => l.remaining_centavos ?? 0))
+  const outstandingTodayCentavos = sum(readyLoans.map((l) => l.remaining_centavos))
   const outstandingExcludedCount = activeLoans.length - readyLoans.length
 
   const activeCount = activeLoans.filter((l) => l.display_status === 'active').length
@@ -46,11 +46,11 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
     readyLoans
       .filter(
         (l) =>
-          (l.remaining_centavos ?? 0) > 0 &&
+          centavos(l.remaining_centavos) > 0 &&
           l.payment_start_on! <= today &&
           (l.collection_weekdays as number[]).includes(todayWeekday),
       )
-      .map((l) => Math.min(l.daily_due_centavos ?? 0, l.remaining_centavos ?? 0)),
+      .map((l) => Math.min(centavos(l.daily_due_centavos), centavos(l.remaining_centavos))),
   )
 
   const sixMonthChart = buildSixMonthChart(netPayments, sixMonthsAgo)
@@ -72,8 +72,16 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   }
 }
 
-function sum(values: number[]) {
-  return values.reduce((total, v) => total + v, 0)
+/** PostgreSQL bigint values may arrive as decimal strings through either backend. */
+function centavos(value: unknown): number {
+  if (value === null || value === undefined) return 0
+  const parsed = typeof value === 'number' ? value : Number(value)
+  if (!Number.isSafeInteger(parsed)) throw new Error('Centavo value is outside JavaScript safe-integer range')
+  return parsed
+}
+
+function sum(values: unknown[]) {
+  return values.reduce<number>((total, value) => total + centavos(value), 0)
 }
 
 function monthStartIso(iso: string) {
@@ -86,7 +94,7 @@ function addMonthsIso(iso: string, delta: number) {
   return date.toISOString().slice(0, 10)
 }
 
-function buildSixMonthChart(payments: { paid_on: string; amount_centavos: number }[], sixMonthsAgo: string) {
+function buildSixMonthChart(payments: { paid_on: string; amount_centavos: number | string }[], sixMonthsAgo: string) {
   const bars: { month: string; collectedCentavos: number }[] = []
   for (let i = 0; i < 6; i++) {
     const month = addMonthsIso(sixMonthsAgo, i).slice(0, 7)
@@ -95,7 +103,7 @@ function buildSixMonthChart(payments: { paid_on: string; amount_centavos: number
   const byMonth = new Map(bars.map((b) => [b.month, b]))
   for (const p of payments) {
     const bar = byMonth.get(p.paid_on.slice(0, 7))
-    if (bar) bar.collectedCentavos += p.amount_centavos
+    if (bar) bar.collectedCentavos += centavos(p.amount_centavos)
   }
   return bars
 }
