@@ -17,8 +17,18 @@ export function todayIso(): string {
 
 /** Formats a YYYY-MM-DD string for display without any UTC day-shift. */
 export function formatDateDisplay(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  const [y, m, d] = parseIsoParts(iso)
+  if (!iso || typeof iso !== 'string') return '—'
+  // Be tolerant of timestamp-shaped values from legacy/local data, but
+  // never let an invalid date abort rendering the entire Records list.
+  const dateOnly = iso.slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return '—'
+  const [y, m, d] = parseIsoParts(dateOnly)
+  const check = new Date(Date.UTC(y, m - 1, d))
+  if (
+    check.getUTCFullYear() !== y ||
+    check.getUTCMonth() !== m - 1 ||
+    check.getUTCDate() !== d
+  ) return '—'
   return new Intl.DateTimeFormat('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }).format(
     new Date(y, m - 1, d),
   )
@@ -31,6 +41,19 @@ export function inclusiveDaysBetween(startIso: string, endIso: string): number {
   const start = Date.UTC(sy, sm - 1, sd)
   const end = Date.UTC(ey, em - 1, ed)
   return Math.round((end - start) / 86_400_000) + 1
+}
+
+/** Counts enabled ISO weekdays in an inclusive business-date range. */
+export function collectionDaysBetween(startIso: string, endIso: string, weekdays: number[]): number {
+  if (!startIso || !endIso || endIso < startIso || weekdays.length === 0) return 0
+  const allowed = new Set(weekdays)
+  let cursor = startIso
+  let count = 0
+  while (cursor <= endIso) {
+    if (allowed.has(isoWeekday(cursor))) count += 1
+    cursor = addDaysIso(cursor, 1)
+  }
+  return count
 }
 
 /** ISO weekday (1=Mon..7=Sun) for a YYYY-MM-DD date, independent of local TZ. */

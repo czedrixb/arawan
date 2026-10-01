@@ -19,7 +19,8 @@
             </div>
             <div>
               <label for="edit-record-payment-start" class="mb-1 block text-sm text-text-secondary">Payment Start</label>
-              <input id="edit-record-payment-start" v-model="paymentStartOn" type="date" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
+              <input id="edit-record-payment-start" v-model="paymentStartOn" type="date" required :disabled="termsMode === 'none'" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:bg-surface-subtle disabled:opacity-70" />
+              <p v-if="termsMode === 'none'" class="mt-1 text-xs text-text-secondary">Same as Date Borrowed</p>
             </div>
           </div>
           <div>
@@ -32,6 +33,13 @@
       <section>
         <h3 class="mb-2 text-sm font-semibold text-text-primary">Loan amounts</h3>
         <p v-if="financialTermsLocked" class="mb-3 rounded-control bg-surface-subtle p-3 text-xs text-text-secondary">Amounts are locked because this loan has payment or opening balance history.</p>
+        <fieldset class="mb-3">
+          <legend class="mb-1 text-sm text-text-secondary">Interest terms</legend>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" :disabled="financialTermsLocked" class="press rounded-control border px-3 py-2 text-sm disabled:opacity-60" :class="termsMode === 'standard' ? 'border-primary bg-accent-soft text-primary' : 'border-control-border'" @click="setTermsMode('standard')">Standard 20%</button>
+            <button type="button" :disabled="financialTermsLocked" class="press rounded-control border px-3 py-2 text-sm disabled:opacity-60" :class="termsMode === 'none' ? 'border-primary bg-accent-soft text-primary' : 'border-control-border'" @click="setTermsMode('none')">No interest</button>
+          </div>
+        </fieldset>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label for="edit-record-amount" class="mb-1 block text-sm text-text-secondary">Amount (₱)</label>
@@ -42,16 +50,16 @@
               <label for="edit-record-daily" class="text-sm text-text-secondary">Daily (₱)</label>
               <button v-if="dailyTouched && !financialTermsLocked" type="button" class="press text-xs font-medium text-primary" @click="resetDaily">Reset</button>
             </div>
-            <input id="edit-record-daily" :value="daily.text.value" :disabled="financialTermsLocked" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" @input="onDailyInput(($event.target as HTMLInputElement).value)" @blur="daily.onBlur" />
-            <p class="mt-1 text-xs text-text-secondary">Auto: (principal + interest) ÷ 60</p>
+            <input id="edit-record-daily" :value="daily.text.value" :disabled="financialTermsLocked" :readonly="termsMode === 'none'" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base read-only:bg-surface-subtle disabled:opacity-60" @input="onDailyInput(($event.target as HTMLInputElement).value)" @blur="daily.onBlur" />
+            <p class="mt-1 text-xs text-text-secondary">{{ termsMode === 'none' ? `Auto: principal ÷ ${noInterestCollectionDays} collection days` : 'Auto: (principal + interest) ÷ 60' }}</p>
           </div>
           <div class="col-span-2">
             <div class="mb-1 flex items-center justify-between">
               <label for="edit-record-interest" class="text-sm text-text-secondary">Interest (₱)</label>
               <button v-if="interestTouched && !financialTermsLocked" type="button" class="press text-xs font-medium text-primary" @click="resetInterest">Reset</button>
             </div>
-            <input id="edit-record-interest" :value="interest.text.value" :disabled="financialTermsLocked" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" @input="onInterestInput(($event.target as HTMLInputElement).value)" @blur="interest.onBlur" />
-            <p class="mt-1 text-xs text-text-secondary">Auto: 20% of principal</p>
+            <input id="edit-record-interest" :value="interest.text.value" :disabled="financialTermsLocked || termsMode === 'none'" inputmode="decimal" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:bg-surface-subtle disabled:opacity-60" @input="onInterestInput(($event.target as HTMLInputElement).value)" @blur="interest.onBlur" />
+            <p class="mt-1 text-xs text-text-secondary">{{ termsMode === 'none' ? 'No interest added' : 'Auto: 20% of principal' }}</p>
           </div>
         </div>
       </section>
@@ -83,6 +91,7 @@ const interestCentavos = ref<number | null>(0)
 const principal = useMoneyInput(principalCentavos)
 const daily = useMoneyInput(dailyDueCentavos)
 const interest = useMoneyInput(interestCentavos)
+const termsMode = ref<'standard' | 'none'>('standard')
 
 // House terms (spec §3): interest is 20% of principal and daily due is
 // (principal + interest) ÷ 60, same formula the add-loan form previews
@@ -94,7 +103,12 @@ const interestTouched = ref(false)
 const dailyTouched = ref(false)
 
 function recomputeDaily() {
+  if (financialTermsLocked.value) return
   if (dailyTouched.value) return
+  if (termsMode.value === 'none') {
+    dailyDueCentavos.value = computeDateRangeDailyDue(principalCentavos.value ?? 0, noInterestCollectionDays.value)
+    return
+  }
   dailyDueCentavos.value = computeStandardDailyDue(computeTotalPayable({
     principalCentavos: principalCentavos.value ?? 0,
     interestMode: 'added',
@@ -103,15 +117,22 @@ function recomputeDaily() {
 }
 function onPrincipalInput(value: string) {
   principal.onInput(value)
+  if (termsMode.value === 'none') {
+    interestCentavos.value = 0
+    recomputeDaily()
+    return
+  }
   if (!interestTouched.value) interestCentavos.value = computeStandardInterest(principalCentavos.value ?? 0)
   recomputeDaily()
 }
 function onInterestInput(value: string) {
+  if (termsMode.value === 'none') return
   interestTouched.value = true
   interest.onInput(value)
   recomputeDaily()
 }
 function onDailyInput(value: string) {
+  if (termsMode.value === 'none') return
   dailyTouched.value = true
   daily.onInput(value)
 }
@@ -122,6 +143,27 @@ function resetInterest() {
 }
 function resetDaily() {
   dailyTouched.value = false
+  recomputeDaily()
+}
+
+const noInterestCollectionDays = computed(() => collectionDaysBetween(
+  borrowedOn.value,
+  dueOn.value,
+  props.loan?.collection_weekdays ?? [1, 2, 3, 4, 5, 6, 7],
+))
+
+function setTermsMode(mode: 'standard' | 'none') {
+  if (financialTermsLocked.value || termsMode.value === mode) return
+  termsMode.value = mode
+  interestTouched.value = false
+  dailyTouched.value = false
+  if (mode === 'none') {
+    paymentStartOn.value = borrowedOn.value
+    interestCentavos.value = 0
+  } else {
+    paymentStartOn.value = addDaysIso(borrowedOn.value, 1)
+    interestCentavos.value = computeStandardInterest(principalCentavos.value ?? 0)
+  }
   recomputeDaily()
 }
 
@@ -137,7 +179,14 @@ const isDirty = computed(() => !!original.value && original.value !== JSON.strin
 const dateError = computed(() => {
   if (borrowedOn.value && paymentStartOn.value && paymentStartOn.value < borrowedOn.value) return 'Payment Start must be on or after Date Borrowed.'
   if (paymentStartOn.value && dueOn.value && dueOn.value < paymentStartOn.value) return 'Date Completed must be on or after Payment Start.'
+  if (termsMode.value === 'none' && noInterestCollectionDays.value === 0) return 'The date range has no enabled collection days.'
   return null
+})
+
+watch([borrowedOn, dueOn], () => {
+  if (termsMode.value !== 'none' || loadingBorrower.value || financialTermsLocked.value) return
+  paymentStartOn.value = borrowedOn.value
+  recomputeDaily()
 })
 
 let loadSequence = 0
@@ -154,6 +203,7 @@ watch(() => [props.open, props.loan?.id] as const, async ([open]) => {
   principalCentavos.value = props.loan.principal_centavos
   dailyDueCentavos.value = props.loan.daily_due_centavos
   interestCentavos.value = props.loan.interest_centavos ?? 0
+  termsMode.value = props.loan.interest_mode === 'none' ? 'none' : 'standard'
   // Start each open in derived mode -- a loan already saved with
   // non-standard terms should still re-derive once its Amount is edited,
   // rather than freezing whatever was stored.

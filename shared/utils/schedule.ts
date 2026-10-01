@@ -40,6 +40,12 @@ export function computeStandardDailyDue(totalPayableCentavos: number): number {
   return Math.ceil(totalPayableCentavos / STANDARD_INSTALLMENTS)
 }
 
+/** Principal divided across a date range's enabled collection days. */
+export function computeDateRangeDailyDue(principalCentavos: number, collectionDayCount: number): number {
+  if (principalCentavos <= 0 || collectionDayCount <= 0) return 0
+  return Math.ceil(principalCentavos / collectionDayCount)
+}
+
 /**
  * `total_payable = principal + fixed_interest` (added) or `principal`
  * (none/included) -- "included" means the entered principal already
