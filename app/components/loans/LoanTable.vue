@@ -28,7 +28,7 @@
         <tr v-for="(loan, i) in loans" :key="loan.id" class="hover:bg-surface-subtle">
           <td class="px-4 py-3 text-text-secondary">{{ rowOffset + i + 1 }}</td>
           <td class="px-4 py-3">
-            <NuxtLink :to="`/records/${loan.id}`" class="font-medium text-text-primary hover:underline">
+            <NuxtLink :to="{ path: `/records/${loan.id}`, query: route.query }" class="font-medium text-text-primary hover:underline">
               {{ loan.borrower_display_name }}
             </NuxtLink>
           </td>
@@ -62,6 +62,7 @@ import { PhCaretUpDown, PhDotsThreeVertical } from '@phosphor-icons/vue'
 import type { LoanFilters } from '#shared/schemas/loan'
 
 const props = defineProps<{ loans: any[]; rowOffset: number; sort: LoanFilters['sort'] }>()
+const route = useRoute()
 const emit = defineEmits<{
   sort: [LoanFilters['sort']]
   edit: [loan: any]

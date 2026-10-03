@@ -7,7 +7,7 @@
       @touchmove="onTouchMove"
       @touchend="onTouchEnd"
     >
-      <NuxtLink :to="`/records/${loan.id}`" class="min-w-0 flex-1 px-4 py-3">
+      <NuxtLink :to="{ path: `/records/${loan.id}`, query: route.query }" class="min-w-0 flex-1 px-4 py-3">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <p class="truncate text-sm font-medium text-text-primary">{{ rowNumber }}. {{ loan.borrower_display_name }}</p>
@@ -57,6 +57,7 @@
 import { PhDotsThreeVertical } from '@phosphor-icons/vue'
 
 const props = defineProps<{ loan: any; rowNumber: number }>()
+const route = useRoute()
 const emit = defineEmits<{ more: [loan: any]; edit: [loan: any]; renew: [loan: any]; 'record-payment': [loan: any] }>()
 const canRenew = computed(() => props.loan.lifecycle === 'active' && props.loan.readiness === 'ready' && !props.loan.archived_at && props.loan.remaining_centavos > 0)
 

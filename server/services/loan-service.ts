@@ -248,8 +248,6 @@ export async function editLoanRecord(client: SupabaseClient, id: string, input: 
 }
 
 export async function setArchived(client: SupabaseClient, ownerId: string, id: string, archived: boolean, version: number): Promise<LoanSummary | null> {
-  const existing = await getLoanById(client, ownerId, id)
-  if (existing?.lifecycle === 'renewed') throw Object.assign(new Error('Renewed loans are read-only'), { code: 'ARW09' })
   const { data, error } = await client
     .from('loans')
     .update({ archived_at: archived ? new Date().toISOString() : null })
