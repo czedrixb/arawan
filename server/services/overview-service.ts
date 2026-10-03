@@ -33,7 +33,7 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   if (paymentsError) throw paymentsError
   if (latestPaymentsError) throw latestPaymentsError
 
-  const activeLoans = (loans ?? []).filter((l) => !l.archived_at)
+  const activeLoans = (loans ?? []).filter((l) => !l.archived_at && l.lifecycle !== 'renewed')
   const reversedIds = new Set((payments ?? []).filter((p) => p.kind === 'reversal').map((p) => p.reverses_id))
   const netPayments = (payments ?? []).filter((p) => p.kind === 'payment' && !reversedIds.has(p.id))
 

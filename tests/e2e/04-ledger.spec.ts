@@ -25,11 +25,13 @@ test('partial payment, over-payment rejection, and reversal reopening', async ({
   await page.goto(`/records/${loan.id}`)
   await page.getByTestId('loan-detail-record-payment').click()
   await page.getByLabel('Amount (₱)').fill('50.00')
+  await page.screenshot({ path: testInfo.outputPath('before-save-payment.png'), fullPage: true })
   await page.getByRole('button', { name: 'Save payment' }).click()
   // ToastHost's "Payment saved" and the sheet's own inline "Payment
   // saved." status text both match a non-exact getByText -- pin to the
   // toast specifically.
   await expect(page.getByText('Payment saved', { exact: true })).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('after-save-payment.png'), fullPage: true })
 
   // Over-payment beyond the remaining balance is rejected.
   await page.getByTestId('loan-detail-record-payment').click()

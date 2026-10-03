@@ -56,10 +56,10 @@
         />
         <template v-else>
           <ul class="overflow-hidden rounded-card border border-border lg:hidden">
-            <LoanListItem v-for="(loan, i) in data.rows" :key="loan.id" :loan="loan" :row-number="rowOffset + i + 1" @more="onMore" @edit="onEdit" @record-payment="onRecordPaymentFor" />
+            <LoanListItem v-for="(loan, i) in data.rows" :key="loan.id" :loan="loan" :row-number="rowOffset + i + 1" @more="onMore" @edit="onEdit" @record-payment="onRecordPaymentFor" @renew="onRenew" />
           </ul>
           <div class="hidden lg:block">
-            <LoanTable :loans="data.rows" :row-offset="rowOffset" :sort="filters.sort ?? 'sequence_asc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @edit="onEdit" @more="onMore" @record-payment="onRecordPaymentFor" @archive="onArchive" />
+            <LoanTable :loans="data.rows" :row-offset="rowOffset" :sort="filters.sort ?? 'sequence_asc'" @sort="(s: LoanFilters['sort']) => update({ sort: s })" @edit="onEdit" @more="onMore" @record-payment="onRecordPaymentFor" @archive="onArchive" @renew="onRenew" />
           </div>
           <div class="mt-3 flex items-center justify-between text-sm text-text-secondary">
             <span>{{ data.total }} records</span>
@@ -77,6 +77,7 @@
     <LoanFormSheet v-model:open="addOpen" @created="addOpen = false" />
     <LoanEditSheet :open="!!editLoan" :loan="editLoan" @update:open="(open: boolean) => !open && (editLoan = null)" />
     <PaymentFormSheet v-if="paymentLoan" :open="!!paymentLoan" :loan="paymentLoan" @update:open="(v: boolean) => !v && (paymentLoan = null)" />
+    <LoanRenewalSheet v-if="renewalLoan" :open="!!renewalLoan" :loan="renewalLoan" @update:open="(v:boolean)=>!v&&(renewalLoan=null)" />
 
     <!--
       /records/:id renders here as a nested child route (spec §5/§6): a
@@ -122,6 +123,7 @@ const filterOpen = ref(false)
 const addOpen = ref(false)
 const paymentLoan = ref<any>(null)
 const editLoan = ref<LoanSummary | null>(null)
+const renewalLoan = ref<LoanSummary | null>(null)
 const exporting = ref(false)
 
 const mobileSegments = [
@@ -139,6 +141,7 @@ function onEdit(loan: LoanSummary) {
 function onRecordPaymentFor(loan: any) {
   paymentLoan.value = loan
 }
+function onRenew(loan: LoanSummary) { renewalLoan.value = loan }
 // Same archive/restore flow as the loan detail drawer (app/pages/records/[id].vue).
 async function onArchive(loan: LoanSummary) {
   const confirm = useConfirm()

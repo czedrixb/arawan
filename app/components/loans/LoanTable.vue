@@ -68,18 +68,21 @@ const emit = defineEmits<{
   more: [loan: any]
   'record-payment': [loan: any]
   archive: [loan: any]
+  renew: [loan: any]
 }>()
 
 // Mirrors the mobile action set (LoanListItem.vue's swipe-reveal strip) so
 // the same actions are reachable on desktop -- previously the borrower
 // name link was the only discoverable way to open a row.
 function rowActions(loan: any) {
-  return [
+  const actions = [
     { label: 'View details', onSelect: () => emit('more', loan) },
-    { label: 'Record payment', onSelect: () => emit('record-payment', loan) },
-    { label: 'Edit', onSelect: () => emit('edit', loan) },
+    ...(loan.lifecycle === 'active' ? [{ label: 'Record payment', onSelect: () => emit('record-payment', loan) }] : []),
+    ...(loan.lifecycle === 'active' && loan.readiness === 'ready' && !loan.archived_at && loan.remaining_centavos > 0 ? [{ label: 'Renew loan', onSelect: () => emit('renew', loan) }] : []),
+    ...(loan.lifecycle !== 'renewed' ? [{ label: 'Edit', onSelect: () => emit('edit', loan) }] : []),
     { label: loan.archived_at ? 'Restore' : 'Archive', onSelect: () => emit('archive', loan) },
   ]
+  return actions
 }
 
 const columns = [

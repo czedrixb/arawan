@@ -6,7 +6,8 @@
 
 export type InterestMode = 'none' | 'added' | 'included'
 export type LoanReadiness = 'needs_review' | 'ready'
-export type DisplayStatus = 'needs_review' | 'active' | 'overdue' | 'completed' | 'archived'
+export type DisplayStatus = 'needs_review' | 'active' | 'overdue' | 'completed' | 'renewed' | 'archived'
+export type LoanLifecycle = 'active' | 'completed' | 'renewed'
 export type PaymentKind = 'payment' | 'reversal'
 
 /** One row of the `loan_summary` view (supabase/migrations/0005_loan_summary_view.sql). */
@@ -37,6 +38,10 @@ export interface LoanSummary {
   created_at: string
   updated_at: string
   version: number
+  lifecycle: LoanLifecycle
+  closed_at: string | null
+  renewed_from_loan_id: string | null
+  renewed_to_loan_id: string | null
   opening_collected_centavos: number
   net_payments_centavos: number
   recognized_collected_centavos: number | null
@@ -45,6 +50,15 @@ export interface LoanSummary {
   completed_on: string | null
   display_status: DisplayStatus
   financial_terms_locked?: boolean
+}
+
+export interface LoanRenewal {
+  id: string; owner_id: string; old_loan_id: string; new_loan_id: string; effective_on: string
+  original_principal_centavos: number; original_interest_centavos: number; original_total_payable_centavos: number
+  collections_before_renewal_centavos: number; remaining_principal_centavos: number; unpaid_interest_centavos: number
+  renewal_payment_centavos: number; waived_interest_centavos: number; waiver_note: string | null
+  capitalized_interest_centavos: number; carried_principal_centavos: number; additional_cash_centavos: number
+  new_financed_principal_centavos: number; created_at: string
 }
 
 export interface PaymentEntry {

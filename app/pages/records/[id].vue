@@ -24,11 +24,14 @@
         </div>
 
         <div v-if="menuOpen" class="border-b border-border px-5 py-2">
-          <button type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="onArchiveToggle">
+          <button v-if="data.loan.lifecycle !== 'renewed'" type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="onArchiveToggle">
             {{ data.loan.archived_at ? 'Restore' : 'Archive' }}
           </button>
-          <button type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="editOpen = true">
+          <button v-if="data.loan.lifecycle !== 'renewed'" type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="editOpen = true">
             Edit record
+          </button>
+          <button v-if="canRenew" data-testid="detail-renew-loan" type="button" class="press block w-full py-2 text-left text-sm text-primary" @click="menuOpen=false; renewalOpen=true">
+            Renew loan
           </button>
           <button v-if="data.loan.readiness === 'needs_review'" type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="openingOpen = true">
             Confirm opening balance
@@ -52,6 +55,8 @@
 
         <div class="flex-1 overflow-y-auto px-5 py-4">
           <div v-if="tab === 'Loan details'" class="flex flex-col gap-4">
+            <NuxtLink v-if="data.predecessor" data-testid="renewed-from-link" :to="`/records/${data.predecessor.id}`" class="rounded-control border border-border p-3 text-sm text-primary">Renewed from {{ data.predecessor.borrower_display_name }} · {{ formatDateDisplay(data.predecessor.borrowed_on) }}</NuxtLink>
+            <NuxtLink v-if="data.successor" data-testid="renewed-to-link" :to="`/records/${data.successor.id}`" class="rounded-control border border-border p-3 text-sm text-primary">Renewed to new loan · {{ formatDateDisplay(data.successor.borrowed_on) }}</NuxtLink>
             <div v-if="data.loan.readiness === 'needs_review'" class="rounded-control bg-warning-bg p-4 text-sm text-warning-fg">
               This loan's terms or opening balance still need review. Financial totals are hidden until resolved.
             </div>
@@ -75,6 +80,17 @@
               <dt class="text-text-secondary">Due</dt>
               <dd class="text-right">{{ formatDateDisplay(data.loan.due_on) }}</dd>
             </dl>
+            <div v-if="data.renewal" data-testid="renewal-settlement" class="rounded-control bg-surface-subtle p-4 text-sm">
+              <p class="mb-2 font-semibold">Renewal settlement</p>
+              <dl class="grid grid-cols-2 gap-y-1">
+                <dt>Effective date</dt><dd class="text-right">{{ formatDateDisplay(data.renewal.effective_on) }}</dd>
+                <dt>Renewal payment</dt><dd class="text-right"><MoneyText :centavos="data.renewal.renewal_payment_centavos" /></dd>
+                <dt>Waived interest</dt><dd class="text-right"><MoneyText :centavos="data.renewal.waived_interest_centavos" /></dd>
+                <dt>Capitalized interest</dt><dd class="text-right"><MoneyText :centavos="data.renewal.capitalized_interest_centavos" /></dd>
+                <dt>Carried principal</dt><dd class="text-right"><MoneyText :centavos="data.renewal.carried_principal_centavos" /></dd>
+                <dt>Additional cash</dt><dd class="text-right"><MoneyText :centavos="data.renewal.additional_cash_centavos" /></dd>
+              </dl>
+            </div>
             <div>
               <p class="mb-1 text-sm text-text-secondary">Progress</p>
               <ProgressBar :pct="data.loan.progress_pct" />
@@ -105,7 +121,7 @@
           </div>
         </div>
 
-        <div v-if="data.loan.remaining_centavos != null && data.loan.remaining_centavos > 0" class="border-t border-border px-5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div v-if="data.loan.lifecycle === 'active' && data.loan.remaining_centavos != null && data.loan.remaining_centavos > 0" class="border-t border-border px-5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <button
             type="button"
             data-testid="loan-detail-record-payment"
@@ -122,6 +138,7 @@
     <OpeningBalanceForm v-if="data" :open="openingOpen" :loan-id="id" @update:open="openingOpen = $event" />
     <LoanEditSheet v-if="data" :open="editOpen" :loan="data.loan" @update:open="editOpen = $event" />
     <ReversalDialog v-if="reversingPayment" :open="!!reversingPayment" :loan-id="id" :payment="reversingPayment" @update:open="(v: boolean) => !v && (reversingPayment = null)" />
+    <LoanRenewalSheet v-if="data" :open="renewalOpen" :loan="data.loan" @update:open="renewalOpen=$event" />
   </div>
 </template>
 
@@ -139,7 +156,9 @@ const menuOpen = ref(false)
 const paymentOpen = ref(false)
 const openingOpen = ref(false)
 const editOpen = ref(false)
+const renewalOpen = ref(false)
 const reversingPayment = ref<any>(null)
+const canRenew = computed(() => data.value?.loan.lifecycle === 'active' && data.value.loan.readiness === 'ready' && !data.value.loan.archived_at && (data.value.loan.remaining_centavos ?? 0) > 0)
 
 function close() {
   // Browser Back closes it (spec §5) -- go back if we navigated here

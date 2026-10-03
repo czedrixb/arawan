@@ -1,4 +1,4 @@
-import { getLoanById, listLoansByBorrower } from '~~/server/services/loan-service'
+import { getLoanById, getRenewalDetails, listLoansByBorrower } from '~~/server/services/loan-service'
 
 export default defineEventHandler(async (event) => {
   const { user, client } = await requireOwner(event)
@@ -6,5 +6,6 @@ export default defineEventHandler(async (event) => {
   const loan = await getLoanById(client, user.id, id)
   if (!loan) notFound(event, 'Loan not found')
   const otherLoans = (await listLoansByBorrower(client, user.id, loan.borrower_id)).filter((l) => l.id !== id)
-  return { loan, otherLoans }
+  const links = await getRenewalDetails(client, user.id, loan)
+  return { loan, otherLoans, ...links }
 })
