@@ -133,8 +133,9 @@ const mobileSegments = [
 ] as const
 
 function onMore(loan: any) {
-  navigateTo(`/records/${loan.id}`)
+  navigateTo({ path: `/records/${loan.id}`, query: route.query })
 }
+const route = useRoute()
 function onEdit(loan: LoanSummary) {
   editLoan.value = loan
 }

@@ -24,7 +24,7 @@
         </div>
 
         <div v-if="menuOpen" class="border-b border-border px-5 py-2">
-          <button v-if="data.loan.lifecycle !== 'renewed'" type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="onArchiveToggle">
+          <button type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="onArchiveToggle">
             {{ data.loan.archived_at ? 'Restore' : 'Archive' }}
           </button>
           <button v-if="data.loan.lifecycle !== 'renewed'" type="button" class="press block w-full py-2 text-left text-sm text-text-primary" @click="editOpen = true">
@@ -55,8 +55,8 @@
 
         <div class="flex-1 overflow-y-auto px-5 py-4">
           <div v-if="tab === 'Loan details'" class="flex flex-col gap-4">
-            <NuxtLink v-if="data.predecessor" data-testid="renewed-from-link" :to="`/records/${data.predecessor.id}`" class="rounded-control border border-border p-3 text-sm text-primary">Renewed from {{ data.predecessor.borrower_display_name }} · {{ formatDateDisplay(data.predecessor.borrowed_on) }}</NuxtLink>
-            <NuxtLink v-if="data.successor" data-testid="renewed-to-link" :to="`/records/${data.successor.id}`" class="rounded-control border border-border p-3 text-sm text-primary">Renewed to new loan · {{ formatDateDisplay(data.successor.borrowed_on) }}</NuxtLink>
+            <NuxtLink v-if="data.predecessor" data-testid="renewed-from-link" :to="{ path: `/records/${data.predecessor.id}`, query: route.query }" class="rounded-control border border-border p-3 text-sm text-primary">Renewed from {{ data.predecessor.borrower_display_name }} · {{ formatDateDisplay(data.predecessor.borrowed_on) }}</NuxtLink>
+            <NuxtLink v-if="data.successor" data-testid="renewed-to-link" :to="{ path: `/records/${data.successor.id}`, query: route.query }" class="rounded-control border border-border p-3 text-sm text-primary">Renewed to new loan · {{ formatDateDisplay(data.successor.borrowed_on) }}</NuxtLink>
             <div v-if="data.loan.readiness === 'needs_review'" class="rounded-control bg-warning-bg p-4 text-sm text-warning-fg">
               This loan's terms or opening balance still need review. Financial totals are hidden until resolved.
             </div>
@@ -106,7 +106,7 @@
               <p class="mb-2 text-sm font-semibold text-text-primary">Other loans by {{ data.loan.borrower_display_name }}</p>
               <ul class="flex flex-col gap-2">
                 <li v-for="other in otherLoans" :key="other.id">
-                  <NuxtLink :to="`/records/${other.id}`" class="press flex items-center justify-between rounded-control border border-border px-3 py-2 text-sm">
+                  <NuxtLink :to="{ path: `/records/${other.id}`, query: route.query }" class="press flex items-center justify-between rounded-control border border-border px-3 py-2 text-sm">
                     <span>{{ formatDateDisplay(other.borrowed_on) }}</span>
                     <MoneyText :centavos="other.remaining_centavos" />
                     <StatusPill :status="other.display_status" />
@@ -164,7 +164,7 @@ function close() {
   // Browser Back closes it (spec §5) -- go back if we navigated here
   // within the app, otherwise fall back to the records list directly.
   if (window.history.state?.back?.startsWith?.('/records')) router.back()
-  else navigateTo('/records')
+  else navigateTo({ path: '/records', query: route.query })
 }
 const router = useRouter()
 

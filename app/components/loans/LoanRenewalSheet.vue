@@ -63,6 +63,7 @@
 <script setup lang="ts">
 const props = defineProps<{ open: boolean; loan: LoanSummary }>()
 const emit = defineEmits<{ 'update:open': [boolean] }>()
+const route = useRoute()
 const openModel = computed({ get: () => props.open, set: v => emit('update:open', v) })
 const effectiveOn = ref(todayIso())
 const renewalPrincipal = ref(0), renewalPayment = ref(0), waivedInterest = ref(0)
@@ -99,7 +100,7 @@ async function submit(){
   error.value=''; submitting.value=true
   try {
     const result:any = await renewLoan(props.loan.id,{ version:props.loan.version,idempotencyKey:crypto.randomUUID(),effectiveOn:effectiveOn.value,renewalPaymentCentavos:renewalPayment.value,waivedInterestCentavos:waivedInterest.value,waiverNote:waiverNote.value||null,additionalCashCentavos:cashReleased.value,collectionWeekdays:weekdays.value,newTerm:newTerm.value,noInterestDueOn:newTerm.value==='none'?noInterestDueOn.value:null })
-    emit('update:open',false); useToast().show('Loan renewed'); await navigateTo(`/records/${result.newLoan.id}`)
+    emit('update:open',false); useToast().show('Loan renewed'); await navigateTo({ path: `/records/${result.newLoan.id}`, query: route.query })
   } catch(e:any){ error.value=e?.data?.statusMessage ?? 'Could not renew this loan.' } finally { submitting.value=false }
 }
 </script>
