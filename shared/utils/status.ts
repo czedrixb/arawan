@@ -9,5 +9,6 @@ export const STATUS_META: Record<DisplayStatus, { label: string; fg: string; bg:
   active: { label: 'Active', fg: 'var(--color-success-fg)', bg: 'var(--color-accent-soft)' },
   overdue: { label: 'Overdue', fg: 'var(--color-danger-fg)', bg: 'var(--color-danger-bg)' },
   completed: { label: 'Completed', fg: 'var(--color-success-fg)', bg: 'var(--color-success-bg)' },
+  renewed: { label: 'Renewed', fg: 'var(--color-primary)', bg: 'var(--color-accent-soft)' },
   archived: { label: 'Archived', fg: 'var(--color-text-secondary)', bg: 'var(--color-surface-subtle)' },
 }

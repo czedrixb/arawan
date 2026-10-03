@@ -43,8 +43,8 @@ export async function withNativeOwner<T>(ownerId: string, fn: (client: PoolClien
   })
 }
 
-const TABLES = new Set(['profiles', 'borrowers', 'loans', 'loan_summary', 'payment_entries', 'opening_balances', 'audit_events'])
-const FUNCTIONS = new Set(['record_payment', 'reverse_payment', 'confirm_opening_balance', 'edit_loan_record'])
+const TABLES = new Set(['profiles', 'borrowers', 'loans', 'loan_summary', 'loan_renewals', 'payment_entries', 'opening_balances', 'audit_events'])
+const FUNCTIONS = new Set(['record_payment', 'reverse_payment', 'confirm_opening_balance', 'edit_loan_record', 'renew_loan'])
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/
 
 type Filter = { kind: 'eq' | 'is' | 'notIs' | 'gte' | 'lte' | 'ilike' | 'in'; column: string; value: unknown }
@@ -61,9 +61,13 @@ export class NativeSupabaseClient {
     if (entries.some(([key]) => !IDENTIFIER.test(key))) return { data: null, error: new Error('Invalid RPC argument') }
     try {
       const result = await withNativeOwner(this.ownerId, (client) =>
-        client.query(`select * from public.${name}(${entries.map(([key], i) => `${key} => $${i + 1}`).join(', ')})`, entries.map(([, value]) => value)),
+        client.query(`select * from public.${name}(${entries.map(([key], i) => `${key} => $${i + 1}${key === 'p_collection_weekdays' ? '::smallint[]' : ''}`).join(', ')})`, entries.map(([, value]) => value)),
       )
-      return { data: result.rows[0] ?? null, error: null }
+      const row = result.rows[0] ?? null
+      // Scalar-returning RPCs (such as renew_loan's jsonb response) come
+      // back from pg as { function_name: value }; PostgREST returns value.
+      const data = row && Object.keys(row).length === 1 && Object.hasOwn(row, name) ? row[name] : row
+      return { data, error: null }
     } catch (error) {
       return { data: null, error }
     }

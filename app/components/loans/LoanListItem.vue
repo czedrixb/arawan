@@ -46,6 +46,7 @@
     <!-- Swipe reveal -- mirrored exactly by the visible More menu, never the only way to reach these actions (spec §6). -->
     <div v-if="dragX < 0" class="absolute inset-y-0 right-0 flex flex-col" :style="{ width: `${revealWidth}px` }">
       <button type="button" class="flex-1 bg-primary px-2 text-xs font-medium text-white" @click="onRecordPayment">Record payment</button>
+      <button v-if="canRenew" type="button" class="flex-1 bg-accent-soft px-2 text-xs font-medium text-primary" @click="$emit('renew', loan)">Renew</button>
       <button type="button" class="flex-1 bg-accent-soft px-2 text-xs font-medium text-primary" @click="$emit('edit', loan)">Edit</button>
       <button type="button" class="flex-1 bg-surface-subtle px-2 text-xs font-medium text-text-primary" @click="$emit('more', loan)">More</button>
     </div>
@@ -56,7 +57,8 @@
 import { PhDotsThreeVertical } from '@phosphor-icons/vue'
 
 const props = defineProps<{ loan: any; rowNumber: number }>()
-const emit = defineEmits<{ more: [loan: any]; edit: [loan: any]; 'record-payment': [loan: any] }>()
+const emit = defineEmits<{ more: [loan: any]; edit: [loan: any]; renew: [loan: any]; 'record-payment': [loan: any] }>()
+const canRenew = computed(() => props.loan.lifecycle === 'active' && props.loan.readiness === 'ready' && !props.loan.archived_at && props.loan.remaining_centavos > 0)
 
 const revealWidth = 96
 const dragX = ref(0)

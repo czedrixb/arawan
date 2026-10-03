@@ -5,7 +5,8 @@
 // substitute for checks inside the app layer either" spirit: defense in
 // depth, and it makes intent obvious on read.
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { LoanFilters, LoanInput, LoanPatch, LoanRecordEdit } from '#shared/schemas/loan'
+import type { LoanFilters, LoanInput, LoanPatch, LoanRecordEdit, RenewLoanInput } from '#shared/schemas/loan'
+import type { H3Event } from 'h3'
 
 const SORT_COLUMNS: Record<LoanFilters['sort'], { column: string; ascending: boolean }> = {
   sequence_asc: { column: 'source_sequence', ascending: true },
@@ -65,6 +66,34 @@ export async function getLoanById(client: SupabaseClient, ownerId: string, id: s
   if (error) throw error
   if (!data) return null
   return (await attachFinancialTermLocks(client, ownerId, [data]))[0] ?? null
+}
+
+export async function getRenewalDetails(client: SupabaseClient, ownerId: string, loan: LoanSummary) {
+  const [renewalResult, predecessor, successor] = await Promise.all([
+    client.from('loan_renewals').select('*').eq('owner_id', ownerId)
+      .in('old_loan_id', [loan.id]).maybeSingle(),
+    loan.renewed_from_loan_id ? getLoanById(client, ownerId, loan.renewed_from_loan_id) : null,
+    loan.renewed_to_loan_id ? getLoanById(client, ownerId, loan.renewed_to_loan_id) : null,
+  ])
+  let renewal = renewalResult.data
+  if (!renewal && loan.renewed_from_loan_id) {
+    const result = await client.from('loan_renewals').select('*').eq('owner_id', ownerId).eq('new_loan_id', loan.id).maybeSingle()
+    if (result.error) throw result.error
+    renewal = result.data
+  }
+  if (renewalResult.error) throw renewalResult.error
+  return { predecessor, successor, renewal }
+}
+
+export async function renewLoan(event: H3Event, client: SupabaseClient, loanId: string, input: RenewLoanInput) {
+  const args: Record<string, unknown> = {
+    p_loan_id: loanId, p_loan_version: input.version, p_idempotency_key: input.idempotencyKey,
+    p_effective_on: input.effectiveOn, p_renewal_payment_centavos: input.renewalPaymentCentavos,
+    p_waived_interest_centavos: input.waivedInterestCentavos, p_additional_cash_centavos: input.additionalCashCentavos,
+    p_waiver_note: input.waiverNote ?? '', p_collection_weekdays: input.collectionWeekdays, p_new_term: input.newTerm,
+  }
+  if (input.noInterestDueOn) args.p_no_interest_due_on = input.noInterestDueOn
+  return callRpc(event, client, 'renew_loan', args)
 }
 
 export async function listLoansByBorrower(client: SupabaseClient, ownerId: string, borrowerId: string): Promise<LoanSummary[]> {
@@ -160,6 +189,8 @@ export function touchesFinancialTerms(patch: LoanPatch) {
 }
 
 export async function patchLoan(client: SupabaseClient, ownerId: string, id: string, patch: LoanPatch): Promise<LoanSummary | null> {
+  const existing = await getLoanById(client, ownerId, id)
+  if (existing?.lifecycle === 'renewed') throw Object.assign(new Error('Renewed loans are read-only'), { code: 'ARW09' })
   const update: Record<string, unknown> = {}
   if (patch.borrowedOn !== undefined) update.borrowed_on = patch.borrowedOn
   if (patch.paymentStartOn !== undefined) update.payment_start_on = patch.paymentStartOn
@@ -217,6 +248,8 @@ export async function editLoanRecord(client: SupabaseClient, id: string, input: 
 }
 
 export async function setArchived(client: SupabaseClient, ownerId: string, id: string, archived: boolean, version: number): Promise<LoanSummary | null> {
+  const existing = await getLoanById(client, ownerId, id)
+  if (existing?.lifecycle === 'renewed') throw Object.assign(new Error('Renewed loans are read-only'), { code: 'ARW09' })
   const { data, error } = await client
     .from('loans')
     .update({ archived_at: archived ? new Date().toISOString() : null })

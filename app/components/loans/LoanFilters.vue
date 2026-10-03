@@ -69,6 +69,7 @@ const statuses = [
   { value: 'overdue', label: 'Overdue' },
   { value: 'needs_review', label: 'Needs review' },
   { value: 'completed', label: 'Completed' },
+  { value: 'renewed', label: 'Renewed' },
 ] as const
 const archiveOptions = [
   { value: 'exclude', label: 'Active only' },

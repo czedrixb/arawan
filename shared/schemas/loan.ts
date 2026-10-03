@@ -68,7 +68,7 @@ export type LoanRecordEdit = z.infer<typeof loanRecordEditSchema>
 
 export const loanFiltersSchema = z.object({
   q: z.string().trim().max(200).optional(),
-  status: z.enum(['all', 'active', 'completed', 'overdue', 'needs_review']).default('all'),
+  status: z.enum(['all', 'active', 'completed', 'renewed', 'overdue', 'needs_review']).default('all'),
   archived: z.enum(['exclude', 'only', 'include']).default('exclude'),
   borrowedFrom: isoDate.optional(),
   borrowedTo: isoDate.optional(),
@@ -89,3 +89,21 @@ export const loanFiltersSchema = z.object({
   pageSize: z.union([z.literal(25), z.literal(50), z.literal(100)]).default(25),
 })
 export type LoanFilters = z.infer<typeof loanFiltersSchema>
+
+export const renewLoanSchema = z.object({
+  version: z.number().int().positive(),
+  idempotencyKey: z.string().uuid(),
+  effectiveOn: isoDate,
+  renewalPaymentCentavos: z.number().int().nonnegative().max(MAX_CENTAVOS),
+  waivedInterestCentavos: z.number().int().nonnegative().max(MAX_CENTAVOS),
+  waiverNote: z.string().trim().max(500).nullable().optional(),
+  additionalCashCentavos: z.number().int().nonnegative().max(MAX_CENTAVOS),
+  collectionWeekdays: weekdays,
+  newTerm: z.enum(['standard', 'none']),
+  noInterestDueOn: isoDate.nullable().optional(),
+}).refine(v => v.waivedInterestCentavos === 0 || !!v.waiverNote, {
+  message: 'A note is required when interest is waived', path: ['waiverNote'],
+}).refine(v => v.newTerm !== 'none' || !!v.noInterestDueOn, {
+  message: 'Choose a due date for no-interest terms', path: ['noInterestDueOn'],
+})
+export type RenewLoanInput = z.infer<typeof renewLoanSchema>

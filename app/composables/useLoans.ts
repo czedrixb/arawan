@@ -36,6 +36,12 @@ export async function patchLoan(id: string, patch: Record<string, unknown>) {
   return loan
 }
 
+export async function renewLoan(id: string, input: Record<string, unknown>) {
+  const result = await $fetch(`/api/loans/${id}/renew`, { method: 'POST', body: input })
+  await syncRecordData({ loanId: id })
+  return result
+}
+
 /**
  * Optimistic archive/restore (spec §2 point 3): the toggle reflects
  * instantly, then reconciles with the authoritative server row; on

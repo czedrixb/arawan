@@ -16,7 +16,12 @@ export type PaymentListResponse = Paged<PaymentEntry>
 export interface LoanDetailResponse {
   loan: LoanSummary
   otherLoans: LoanSummary[]
+  predecessor: LoanSummary | null
+  successor: LoanSummary | null
+  renewal: LoanRenewal | null
 }
+
+export interface RenewLoanResponse { oldLoan: LoanSummary; newLoan: LoanSummary; renewal: LoanRenewal }
 
 export interface OverviewResponse {
   principalRecordedCentavos: number

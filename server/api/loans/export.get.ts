@@ -44,6 +44,9 @@ export default defineEventHandler(async (event) => {
     { header: 'Remaining', key: 'remaining', width: 16 },
     { header: 'Progress %', key: 'progress', width: 13 },
     { header: 'Status', key: 'status', width: 15 },
+    { header: 'Lifecycle', key: 'lifecycle', width: 15 },
+    { header: 'Renewed From Loan ID', key: 'renewedFrom', width: 38 },
+    { header: 'Renewed To Loan ID', key: 'renewedTo', width: 38 },
     { header: 'Archived', key: 'archived', width: 12 },
     { header: 'Updated At', key: 'updated', width: 23 },
   ]
@@ -66,13 +69,16 @@ export default defineEventHandler(async (event) => {
       remaining: loan.remaining_centavos === null ? null : loan.remaining_centavos / 100,
       progress: loan.progress_pct === null ? null : loan.progress_pct / 100,
       status: loan.display_status,
+      lifecycle: loan.lifecycle,
+      renewedFrom: loan.renewed_from_loan_id,
+      renewedTo: loan.renewed_to_loan_id,
       archived: loan.archived_at ? 'Yes' : 'No',
       updated: new Date(loan.updated_at),
     })
   }
   sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
   sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF237A45' } }
-  sheet.autoFilter = { from: 'A1', to: 'R1' }
+  sheet.autoFilter = { from: 'A1', to: 'U1' }
   for (const key of ['borrowed', 'paymentStart', 'due', 'completed']) sheet.getColumn(key).numFmt = 'yyyy-mm-dd'
   for (const key of ['principal', 'interest', 'totalPayable', 'dailyDue', 'collected', 'remaining']) sheet.getColumn(key).numFmt = '₱#,##0.00'
   sheet.getColumn('progress').numFmt = '0.00%'
