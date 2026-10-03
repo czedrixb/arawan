@@ -23,6 +23,7 @@ export interface OverviewResponse {
   interestRecordedCentavos: number
   totalPayableCentavos: number
   collectedInPeriodCentavos: number
+  collectedTodayCentavos: number
   outstandingTodayCentavos: number
   outstandingExcludedCount: number
   activeCount: number

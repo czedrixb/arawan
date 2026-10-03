@@ -1,5 +1,5 @@
-// Two consolidated queries (all loan_summary rows, all payment_entries in
-// the reporting window) instead of one query per metric -- ARAWAN is a
+// Consolidated queries (all loan_summary rows, payment_entries in the
+// reporting window, and the five newest entries) instead of one query per metric -- ARAWAN is a
 // single-owner app with dozens of loans, so this stays well within one
 // round trip's worth of data while keeping every number consistent with
 // the others (spec §2 "one query per screen" / §3 overview metrics).
@@ -10,16 +10,28 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   const today = todayIso()
   const sixMonthsAgo = addMonthsIso(today, -5) // current month + 5 prior = 6 bars
 
-  const [{ data: loans, error: loansError }, { data: payments, error: paymentsError }] = await Promise.all([
+  const [
+    { data: loans, error: loansError },
+    { data: payments, error: paymentsError },
+    { data: latestPayments, error: latestPaymentsError },
+  ] = await Promise.all([
     client.from('loan_summary').select('*').eq('owner_id', ownerId),
     client
       .from('payment_entries')
       .select('id, loan_id, kind, amount_centavos, paid_on, reverses_id, created_at')
       .eq('owner_id', ownerId)
       .gte('paid_on', monthStartIso(sixMonthsAgo)),
+    client
+      .from('payment_entries')
+      .select('id, loan_id, kind, amount_centavos, paid_on, created_at')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(0, 4),
   ])
   if (loansError) throw loansError
   if (paymentsError) throw paymentsError
+  if (latestPaymentsError) throw latestPaymentsError
 
   const activeLoans = (loans ?? []).filter((l) => !l.archived_at)
   const reversedIds = new Set((payments ?? []).filter((p) => p.kind === 'reversal').map((p) => p.reverses_id))
@@ -31,7 +43,10 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
 
   const monthStart = monthStartIso(today)
   const collectedInPeriodCentavos = sum(
-    netPayments.filter((p) => p.paid_on >= monthStart).map((p) => p.amount_centavos),
+    netPayments.filter((p) => dateIso(p.paid_on) >= monthStart).map((p) => p.amount_centavos),
+  )
+  const collectedTodayCentavos = sum(
+    netPayments.filter((p) => dateIso(p.paid_on) === today).map((p) => p.amount_centavos),
   )
 
   const readyLoans = activeLoans.filter((l) => l.readiness === 'ready')
@@ -55,13 +70,25 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
 
   const sixMonthChart = buildSixMonthChart(netPayments, sixMonthsAgo)
 
-  const recentActivity: OverviewResponse['recentActivity'] = []
+  // loan_summary includes archived loans, so historical activity keeps the
+  // borrower's name after a record is archived.
+  const borrowerByLoanId = new Map((loans ?? []).map((loan) => [loan.id, loan.borrower_display_name]))
+  const recentActivity: OverviewResponse['recentActivity'] = (latestPayments ?? []).map((payment) => ({
+    id: payment.id,
+    loanId: payment.loan_id,
+    borrowerDisplayName: borrowerByLoanId.get(payment.loan_id) ?? 'Unknown borrower',
+    kind: payment.kind,
+    amountCentavos: centavos(payment.amount_centavos),
+    paidOn: dateIso(payment.paid_on),
+    createdAt: timestampIso(payment.created_at),
+  }))
 
   return {
     principalRecordedCentavos,
     interestRecordedCentavos,
     totalPayableCentavos,
     collectedInPeriodCentavos,
+    collectedTodayCentavos,
     outstandingTodayCentavos,
     outstandingExcludedCount,
     activeCount,
@@ -94,7 +121,22 @@ function addMonthsIso(iso: string, delta: number) {
   return date.toISOString().slice(0, 10)
 }
 
-function buildSixMonthChart(payments: { paid_on: string; amount_centavos: number | string }[], sixMonthsAgo: string) {
+/** Native Postgres returns date columns as Date objects; Supabase returns YYYY-MM-DD strings. */
+function dateIso(value: unknown): string {
+  if (value instanceof Date) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(value)
+  }
+  if (typeof value === 'string') return value.slice(0, 10)
+  throw new Error('Payment date is invalid')
+}
+
+function timestampIso(value: unknown): string {
+  if (value instanceof Date) return value.toISOString()
+  if (typeof value === 'string') return new Date(value).toISOString()
+  throw new Error('Payment timestamp is invalid')
+}
+
+function buildSixMonthChart(payments: { paid_on: unknown; amount_centavos: number | string }[], sixMonthsAgo: string) {
   const bars: { month: string; collectedCentavos: number }[] = []
   for (let i = 0; i < 6; i++) {
     const month = addMonthsIso(sixMonthsAgo, i).slice(0, 7)
@@ -102,7 +144,7 @@ function buildSixMonthChart(payments: { paid_on: string; amount_centavos: number
   }
   const byMonth = new Map(bars.map((b) => [b.month, b]))
   for (const p of payments) {
-    const bar = byMonth.get(p.paid_on.slice(0, 7))
+    const bar = byMonth.get(dateIso(p.paid_on).slice(0, 7))
     if (bar) bar.collectedCentavos += centavos(p.amount_centavos)
   }
   return bars

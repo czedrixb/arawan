@@ -101,6 +101,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      title: 'Arawan',
       viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
       meta: [{ name: 'theme-color', content: '#F7F8F5' }],
       link: [
