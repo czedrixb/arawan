@@ -44,12 +44,7 @@
           <StatTile label="Active loans" :value="String(overview.activeCount)" :to="{ path: '/records', query: { status: 'active' } }" />
           <StatTile label="Overdue" :value="String(overview.overdueCount)" :to="{ path: '/records', query: { status: 'overdue' } }" tone="danger" />
           <StatTile label="Expected today" :value="formatCentavos(overview.expectedTodayCentavos)" />
-          <StatTile
-            label="Needs review"
-            :value="String(overview.outstandingExcludedCount)"
-            :to="{ path: '/records', query: { status: 'needs_review' } }"
-            tone="warning"
-          />
+          <StatTile label="Actual today" :value="formatCentavos(overview.collectedTodayCentavos)" />
         </section>
 
         <section class="mt-6">
@@ -57,7 +52,7 @@
           <CollectionChart :bars="overview.sixMonthChart" />
         </section>
 
-        <section class="mt-6">
+        <section class="mt-6" data-testid="recent-activity">
           <h2 class="mb-2 text-sm font-semibold text-text-primary">Recent activity</h2>
           <EmptyState v-if="overview.recentActivity.length === 0" message="No payments recorded yet." />
           <ul v-else class="divide-y divide-border rounded-card border border-border bg-surface">
