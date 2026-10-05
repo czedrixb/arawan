@@ -24,6 +24,7 @@ export interface LoanDetailResponse {
 export interface RenewLoanResponse { oldLoan: LoanSummary; newLoan: LoanSummary; renewal: LoanRenewal }
 
 export interface OverviewResponse {
+  reportingDate: string
   principalRecordedCentavos: number
   interestRecordedCentavos: number
   totalPayableCentavos: number
@@ -34,6 +35,8 @@ export interface OverviewResponse {
   activeCount: number
   overdueCount: number
   expectedTodayCentavos: number
+  collectedOnDateCentavos: number
+  expectedOnDateCentavos: number
   sixMonthChart: { month: string; collectedCentavos: number }[]
   recentActivity: {
     id: string

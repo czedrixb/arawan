@@ -9,10 +9,24 @@
     </PageHeader>
 
     <div class="mt-4 px-4 lg:px-8">
+      <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <label for="overview-date" class="block text-sm font-medium text-text-primary">Overview date</label>
+          <p id="overview-date-help" class="text-xs text-text-secondary">Filters Expected and Actual only.</p>
+        </div>
+        <input
+          id="overview-date"
+          v-model="selectedDate"
+          type="date"
+          aria-describedby="overview-date-help"
+          class="w-full rounded-control border border-control-border bg-surface px-3 py-2.5 text-base sm:w-auto"
+        />
+      </div>
+
       <AppSkeleton v-if="pending && !overview" variant="stat-grid" :rows="4" />
       <ErrorState v-else-if="error" @retry="refresh()" />
       <template v-else-if="overview">
-        <section class="rounded-card border border-border bg-surface p-5 shadow-card">
+        <section data-testid="overview-summary" class="rounded-card border border-border bg-surface p-5 shadow-card">
           <p class="text-sm text-text-secondary">Principal recorded</p>
           <p class="mt-1 text-[32px] font-bold leading-none text-text-primary tabular-money">
             {{ formatCentavos(overview.principalRecordedCentavos) }}
@@ -40,11 +54,11 @@
           </div>
         </section>
 
-        <section class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <section data-testid="overview-daily-metrics" class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatTile label="Active loans" :value="String(overview.activeCount)" :to="{ path: '/records', query: { status: 'active' } }" />
           <StatTile label="Overdue" :value="String(overview.overdueCount)" :to="{ path: '/records', query: { status: 'overdue' } }" tone="danger" />
-          <StatTile label="Expected today" :value="formatCentavos(overview.expectedTodayCentavos)" />
-          <StatTile label="Actual today" :value="formatCentavos(overview.collectedTodayCentavos)" />
+          <StatTile :label="expectedLabel" :value="formatCentavos(overview.expectedOnDateCentavos)" />
+          <StatTile :label="actualLabel" :value="formatCentavos(overview.collectedOnDateCentavos)" />
         </section>
 
         <section class="mt-6">
@@ -75,8 +89,18 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'default' })
 
-const { data: overview, pending, error, refresh } = useCachedFetch<OverviewResponse>('/api/overview', { key: 'overview' })
+const selectedDate = ref(todayIso())
+const overviewQuery = computed(() => ({ date: selectedDate.value }))
+const overviewKey = computed(() => `overview:${selectedDate.value}`)
+const { data: overview, pending, error, refresh } = useCachedFetch<OverviewResponse>('/api/overview', {
+  query: overviewQuery,
+  watch: [selectedDate],
+  key: () => overviewKey.value,
+})
 const todayLabel = computed(() => formatDateDisplay(todayIso()))
+const isToday = computed(() => selectedDate.value === todayIso())
+const expectedLabel = computed(() => isToday.value ? 'Expected today' : 'Expected on selected date')
+const actualLabel = computed(() => isToday.value ? 'Actual today' : 'Actual on selected date')
 const addOpen = ref(false)
 const toast = useToast()
 

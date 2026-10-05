@@ -6,9 +6,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { OverviewResponse } from '#shared/types/api'
 
-export async function getOverview(client: SupabaseClient, ownerId: string): Promise<OverviewResponse> {
-  const today = todayIso()
-  const sixMonthsAgo = addMonthsIso(today, -5) // current month + 5 prior = 6 bars
+export async function getOverview(client: SupabaseClient, ownerId: string, reportingDate: string): Promise<OverviewResponse> {
+  const currentDate = todayIso()
+  const sixMonthsAgo = addMonthsIso(currentDate, -5) // current month + 5 prior = 6 bars
+  const chartWindowStart = monthStartIso(sixMonthsAgo)
+  // Include the selected day and every later reversal so a past payment
+  // cannot reappear merely because its reversal was recorded afterward.
+  const paymentWindowStart = reportingDate < chartWindowStart ? reportingDate : chartWindowStart
 
   const [
     { data: loans, error: loansError },
@@ -20,7 +24,7 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
       .from('payment_entries')
       .select('id, loan_id, kind, amount_centavos, paid_on, reverses_id, created_at')
       .eq('owner_id', ownerId)
-      .gte('paid_on', monthStartIso(sixMonthsAgo)),
+      .gte('paid_on', paymentWindowStart),
     client
       .from('payment_entries')
       .select('id, loan_id, kind, amount_centavos, paid_on, created_at')
@@ -41,12 +45,15 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   const interestRecordedCentavos = sum(activeLoans.map((l) => l.interest_centavos))
   const totalPayableCentavos = sum(activeLoans.map((l) => l.total_payable_centavos))
 
-  const monthStart = monthStartIso(today)
+  const monthStart = monthStartIso(currentDate)
   const collectedInPeriodCentavos = sum(
     netPayments.filter((p) => dateIso(p.paid_on) >= monthStart).map((p) => p.amount_centavos),
   )
   const collectedTodayCentavos = sum(
-    netPayments.filter((p) => dateIso(p.paid_on) === today).map((p) => p.amount_centavos),
+    netPayments.filter((p) => dateIso(p.paid_on) === currentDate).map((p) => p.amount_centavos),
+  )
+  const collectedOnDateCentavos = sum(
+    netPayments.filter((p) => dateIso(p.paid_on) === reportingDate).map((p) => p.amount_centavos),
   )
 
   const readyLoans = activeLoans.filter((l) => l.readiness === 'ready')
@@ -56,17 +63,21 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   const activeCount = activeLoans.filter((l) => l.display_status === 'active').length
   const overdueCount = activeLoans.filter((l) => l.display_status === 'overdue').length
 
-  const todayWeekday = isoWeekday(today)
-  const expectedTodayCentavos = sum(
+  const expectedForDate = (date: string) => sum(
     readyLoans
       .filter(
         (l) =>
           centavos(l.remaining_centavos) > 0 &&
-          l.payment_start_on! <= today &&
-          (l.collection_weekdays as number[]).includes(todayWeekday),
+          l.payment_start_on != null &&
+          dateIso(l.payment_start_on) <= date &&
+          (l.collection_weekdays as number[]).includes(isoWeekday(date)),
       )
       .map((l) => Math.min(centavos(l.daily_due_centavos), centavos(l.remaining_centavos))),
   )
+  const expectedTodayCentavos = expectedForDate(currentDate)
+  const expectedOnDateCentavos = reportingDate === currentDate
+    ? expectedTodayCentavos
+    : expectedForDate(reportingDate)
 
   const sixMonthChart = buildSixMonthChart(netPayments, sixMonthsAgo)
 
@@ -84,16 +95,19 @@ export async function getOverview(client: SupabaseClient, ownerId: string): Prom
   }))
 
   return {
+    reportingDate,
     principalRecordedCentavos,
     interestRecordedCentavos,
     totalPayableCentavos,
     collectedInPeriodCentavos,
     collectedTodayCentavos,
+    collectedOnDateCentavos,
     outstandingTodayCentavos,
     outstandingExcludedCount,
     activeCount,
     overdueCount,
     expectedTodayCentavos,
+    expectedOnDateCentavos,
     sixMonthChart,
     recentActivity,
   }
