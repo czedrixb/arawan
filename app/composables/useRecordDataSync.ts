@@ -11,6 +11,7 @@ export async function syncRecordData(options: { loanId?: string; payments?: bool
   const nuxtApp = useNuxtApp()
   const matches = (key: string) =>
     key === 'overview' ||
+    key.startsWith('overview:') ||
     key.startsWith('loans:') ||
     key.startsWith('loan:') ||
     (options.payments && key.startsWith(`payments:${options.loanId}:`))
