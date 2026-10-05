@@ -87,6 +87,10 @@ export default defineNuxtConfig({
       ],
     },
     workbox: {
+      // Nitro serves the SPA shell dynamically, so it is not discovered by
+      // Workbox's public-file glob. Add it explicitly because
+      // navigateFallback must reference a precached URL.
+      additionalManifestEntries: [{ url: '/', revision: null }],
       navigateFallback: '/',
       // Never precache or serve private/API responses from the SW cache.
       navigateFallbackDenylist: [/^\/api\//, /^\/confirm/],
