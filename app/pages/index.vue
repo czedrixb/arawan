@@ -16,7 +16,7 @@
         </div>
         <input
           id="overview-date"
-          v-model="selectedDate"
+          v-model="selectedDateModel"
           type="date"
           aria-describedby="overview-date-help"
           class="w-full rounded-control border border-control-border bg-surface px-3 py-2.5 text-base sm:w-auto"
@@ -90,6 +90,12 @@
 definePageMeta({ layout: 'default' })
 
 const selectedDate = ref(todayIso())
+const selectedDateModel = computed({
+  get: () => selectedDate.value,
+  set: (value: string) => {
+    selectedDate.value = value || todayIso()
+  },
+})
 const overviewQuery = computed(() => ({ date: selectedDate.value }))
 const overviewKey = computed(() => `overview:${selectedDate.value}`)
 const { data: overview, pending, error, refresh } = useCachedFetch<OverviewResponse>('/api/overview', {
