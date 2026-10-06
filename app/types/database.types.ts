@@ -84,6 +84,7 @@ export type Database = {
       borrowers: {
         Row: {
           archived_at: string | null
+          co_maker: string | null
           created_at: string
           display_name: string
           id: string
@@ -96,6 +97,7 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          co_maker?: string | null
           created_at?: string
           display_name: string
           id?: string
@@ -108,6 +110,7 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          co_maker?: string | null
           created_at?: string
           display_name?: string
           id?: string

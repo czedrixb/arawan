@@ -134,6 +134,7 @@ export async function createLoan(client: SupabaseClient, ownerId: string, input:
         display_name: newBorrower.displayName,
         normalized_name: normalizeName(newBorrower.displayName),
         phone: newBorrower.phone ?? null,
+        co_maker: newBorrower.coMaker ?? null,
         notes: newBorrower.notes ?? null,
       })
       .select('id')

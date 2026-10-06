@@ -82,6 +82,7 @@ export interface Borrower {
   display_name: string
   normalized_name: string
   phone: string | null
+  co_maker: string | null
   notes: string | null
   archived_at: string | null
   created_at: string

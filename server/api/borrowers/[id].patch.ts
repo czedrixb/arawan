@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
     update.normalized_name = normalizeName(patch.displayName)
   }
   if (patch.phone !== undefined) update.phone = patch.phone
+  if (patch.coMaker !== undefined) update.co_maker = patch.coMaker
   if (patch.notes !== undefined) update.notes = patch.notes
 
   const { data, error } = await client
