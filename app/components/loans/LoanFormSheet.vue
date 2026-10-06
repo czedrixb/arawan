@@ -49,6 +49,7 @@
         <div v-else class="mt-3 flex flex-col gap-3">
           <input v-model="newBorrower.displayName" type="text" placeholder="Full name" required class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
           <input v-model="newBorrower.phone" type="tel" placeholder="Phone (optional)" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
+          <input v-model="newBorrower.coMaker" type="text" maxlength="200" placeholder="Co-maker (optional)" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base" />
         </div>
       </section>
 
@@ -162,7 +163,7 @@ const borrowerQuery = ref('')
 const borrowerInputRef = ref<HTMLInputElement | null>(null)
 const listOpen = ref(false)
 const selectedBorrower = ref<Borrower | null>(null)
-const newBorrower = reactive({ displayName: '', phone: '' })
+const newBorrower = reactive({ displayName: '', phone: '', coMaker: '' })
 
 const { data: borrowerResults, execute: fetchBorrowers } = useCachedFetch<Borrower[]>('/api/borrowers', {
   query: { q: borrowerQuery },
@@ -373,6 +374,7 @@ watch(
     listOpen.value = true
     newBorrower.displayName = ''
     newBorrower.phone = ''
+    newBorrower.coMaker = ''
     principalCentavos.value = null
     dailyDueCentavos.value = null
     interestCentavosModel.value = 0
@@ -398,7 +400,11 @@ async function onSubmit() {
       ? selectedBorrower.value
         ? { borrowerId: selectedBorrower.value.id }
         : null
-      : { newBorrower: { displayName: newBorrower.displayName, phone: newBorrower.phone || null } }
+      : { newBorrower: {
+          displayName: newBorrower.displayName,
+          phone: newBorrower.phone.trim() || null,
+          coMaker: newBorrower.coMaker.trim() || null,
+        } }
   if (!borrower) {
     submitError.value = 'Select a borrower or enter a new one.'
     return

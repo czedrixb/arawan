@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
       display_name: input.displayName,
       normalized_name: normalizeName(input.displayName),
       phone: input.phone ?? null,
+      co_maker: input.coMaker ?? null,
       notes: input.notes ?? null,
     })
     .select('*')

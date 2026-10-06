@@ -12,6 +12,10 @@
             <label for="edit-record-phone" class="mb-1 block text-sm text-text-secondary">Phone number</label>
             <input id="edit-record-phone" v-model="phone" type="tel" maxlength="40" autocomplete="tel" :disabled="loadingBorrower" :placeholder="loadingBorrower ? 'Loading…' : 'Optional'" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" />
           </div>
+          <div>
+            <label for="edit-record-co-maker" class="mb-1 block text-sm text-text-secondary">Co-maker</label>
+            <input id="edit-record-co-maker" v-model="coMaker" type="text" maxlength="200" :disabled="loadingBorrower" :placeholder="loadingBorrower ? 'Loading…' : 'Optional'" class="w-full rounded-control border border-control-border px-3 py-2.5 text-base disabled:opacity-60" />
+          </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label for="edit-record-borrowed" class="mb-1 block text-sm text-text-secondary">Date Borrowed</label>
@@ -82,6 +86,7 @@ const emit = defineEmits<{ 'update:open': [boolean]; saved: [] }>()
 
 const displayName = ref('')
 const phone = ref('')
+const coMaker = ref('')
 const borrowedOn = ref('')
 const paymentStartOn = ref('')
 const dueOn = ref('')
@@ -170,6 +175,7 @@ function setTermsMode(mode: 'standard' | 'none') {
 const original = ref('')
 const originalRecord = ref('')
 const originalPhone = ref<string | null>(null)
+const originalCoMaker = ref<string | null>(null)
 const borrowerVersion = ref<number | null>(null)
 const loadingBorrower = ref(false)
 const submitting = ref(false)
@@ -195,6 +201,7 @@ watch(() => [props.open, props.loan?.id] as const, async ([open]) => {
   const sequence = ++loadSequence
   displayName.value = props.loan.borrower_display_name
   phone.value = ''
+  coMaker.value = ''
   borrowerVersion.value = null
   loadingBorrower.value = true
   borrowedOn.value = props.loan.borrowed_on ?? ''
@@ -215,6 +222,8 @@ watch(() => [props.open, props.loan?.id] as const, async ([open]) => {
     if (sequence !== loadSequence || !props.open) return
     phone.value = borrower.phone ?? ''
     originalPhone.value = borrower.phone
+    coMaker.value = borrower.co_maker ?? ''
+    originalCoMaker.value = borrower.co_maker
     borrowerVersion.value = borrower.version
     await nextTick()
     originalRecord.value = JSON.stringify(recordValues())
@@ -236,7 +245,11 @@ function recordValues() {
 }
 
 function currentValues() {
-  return { ...recordValues(), phone: phone.value.trim() || null }
+  return {
+    ...recordValues(),
+    phone: phone.value.trim() || null,
+    coMaker: coMaker.value.trim() || null,
+  }
 }
 
 async function onSubmit() {
@@ -263,10 +276,11 @@ async function onSubmit() {
       currentBorrowerVersion = savedLoan.borrower_version
     }
     const nextPhone = phone.value.trim() || null
-    if (nextPhone !== originalPhone.value) {
+    const nextCoMaker = coMaker.value.trim() || null
+    if (nextPhone !== originalPhone.value || nextCoMaker !== originalCoMaker.value) {
       await $fetch(`/api/borrowers/${props.loan.borrower_id}`, {
         method: 'PATCH',
-        body: { version: currentBorrowerVersion, phone: nextPhone },
+        body: { version: currentBorrowerVersion, phone: nextPhone, coMaker: nextCoMaker },
       })
     }
     await syncRecordData({ loanId: props.loan.id })

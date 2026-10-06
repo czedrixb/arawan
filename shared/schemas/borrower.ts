@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const borrowerInputSchema = z.object({
   displayName: z.string().trim().min(1, 'Name is required').max(200),
   phone: z.string().trim().max(40).optional().nullable(),
+  coMaker: z.string().trim().max(200).optional().nullable(),
   notes: z.string().trim().max(2000).optional().nullable(),
 })
 export type BorrowerInput = z.infer<typeof borrowerInputSchema>
