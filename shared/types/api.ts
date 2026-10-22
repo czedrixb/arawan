@@ -23,6 +23,20 @@ export interface LoanDetailResponse {
 
 export interface RenewLoanResponse { oldLoan: LoanSummary; newLoan: LoanSummary; renewal: LoanRenewal }
 
+export type UnpaidBucket = 'none' | 'short'
+
+/** One row of the Overview "didn't pay" list -- a loan due on the reporting date that wasn't paid in full. */
+export interface UnpaidCollectionRow {
+  loanId: string
+  borrowerDisplayName: string
+  dueCentavos: number
+  paidCentavos: number
+  remainingCentavos: number
+  daysMissed: number
+  bucket: UnpaidBucket
+  displayStatus: DisplayStatus
+}
+
 export interface OverviewResponse {
   reportingDate: string
   principalRecordedCentavos: number
@@ -47,4 +61,9 @@ export interface OverviewResponse {
     paidOn: string
     createdAt: string
   }[]
+  unpaid: {
+    rows: UnpaidCollectionRow[]
+    noPaymentCount: number
+    shortCount: number
+  }
 }
