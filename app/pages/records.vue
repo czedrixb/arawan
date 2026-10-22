@@ -64,9 +64,9 @@
           <div class="mt-3 flex items-center justify-between text-sm text-text-secondary">
             <span>{{ data.total }} records</span>
             <div class="flex items-center gap-2">
-              <button type="button" class="press rounded-control border border-control-border px-2 py-1 disabled:opacity-40" :disabled="page <= 1" @click="update({ page: page - 1 })">‹</button>
+              <button type="button" class="press flex h-8 w-8 items-center justify-center rounded-full border border-control-border disabled:opacity-40" :disabled="page <= 1" @click="update({ page: page - 1 })">‹</button>
               <span>Page {{ page }}</span>
-              <button type="button" class="press rounded-control border border-control-border px-2 py-1 disabled:opacity-40" :disabled="page * pageSize >= data.total" @click="update({ page: page + 1 })">›</button>
+              <button type="button" class="press flex h-8 w-8 items-center justify-center rounded-full border border-control-border disabled:opacity-40" :disabled="page * pageSize >= data.total" @click="update({ page: page + 1 })">›</button>
             </div>
           </div>
         </template>

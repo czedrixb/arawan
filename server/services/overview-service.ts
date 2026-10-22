@@ -4,7 +4,23 @@
 // round trip's worth of data while keeping every number consistent with
 // the others (spec §2 "one query per screen" / §3 overview metrics).
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { OverviewResponse } from '#shared/types/api'
+import type { OverviewResponse, UnpaidCollectionRow } from '#shared/types/api'
+
+// Cap on the "didn't pay" rows returned per request -- the two counts stay
+// exact regardless, only the row list is bounded (spec: a single-owner book
+// of dozens of loans today, but this keeps the payload from growing
+// unbounded as it does).
+const UNPAID_ROW_CAP = 500
+
+/** True when a ready loan with a remaining balance is scheduled to collect on `date` (spec: Overview "didn't pay" list / Expected tile share this one definition). */
+function dueOn(loan: { remaining_centavos: unknown; payment_start_on: unknown; collection_weekdays: number[] }, date: string): boolean {
+  return (
+    centavos(loan.remaining_centavos) > 0 &&
+    loan.payment_start_on != null &&
+    dateIso(loan.payment_start_on) <= date &&
+    (loan.collection_weekdays as number[]).includes(isoWeekday(date))
+  )
+}
 
 export async function getOverview(client: SupabaseClient, ownerId: string, reportingDate: string): Promise<OverviewResponse> {
   const currentDate = todayIso()
@@ -65,13 +81,7 @@ export async function getOverview(client: SupabaseClient, ownerId: string, repor
 
   const expectedForDate = (date: string) => sum(
     readyLoans
-      .filter(
-        (l) =>
-          centavos(l.remaining_centavos) > 0 &&
-          l.payment_start_on != null &&
-          dateIso(l.payment_start_on) <= date &&
-          (l.collection_weekdays as number[]).includes(isoWeekday(date)),
-      )
+      .filter((l) => dueOn(l, date))
       .map((l) => Math.min(centavos(l.daily_due_centavos), centavos(l.remaining_centavos))),
   )
   const expectedTodayCentavos = expectedForDate(currentDate)
@@ -80,6 +90,7 @@ export async function getOverview(client: SupabaseClient, ownerId: string, repor
     : expectedForDate(reportingDate)
 
   const sixMonthChart = buildSixMonthChart(netPayments, sixMonthsAgo)
+  const unpaid = buildUnpaidCollections(readyLoans, netPayments, reportingDate, paymentWindowStart)
 
   // loan_summary includes archived loans, so historical activity keeps the
   // borrower's name after a record is archived.
@@ -110,6 +121,7 @@ export async function getOverview(client: SupabaseClient, ownerId: string, repor
     expectedOnDateCentavos,
     sixMonthChart,
     recentActivity,
+    unpaid,
   }
 }
 
@@ -148,6 +160,68 @@ function timestampIso(value: unknown): string {
   if (value instanceof Date) return value.toISOString()
   if (typeof value === 'string') return new Date(value).toISOString()
   throw new Error('Payment timestamp is invalid')
+}
+
+/**
+ * The Overview "didn't pay" list: every ready loan due on `reportingDate`
+ * that wasn't paid in full -- `none` (nothing collected) or `short` (paid
+ * less than the day's due). `netPayments` is already reversal-aware (built
+ * from the same `kind='payment' AND NOT reversed` set as the tiles above),
+ * so a reversed payment puts the borrower straight back on this list with
+ * no extra work.
+ */
+function buildUnpaidCollections(
+  readyLoans: any[],
+  netPayments: { loan_id: string; paid_on: unknown; amount_centavos: number | string }[],
+  reportingDate: string,
+  paymentWindowStart: string,
+): OverviewResponse['unpaid'] {
+  const collectedOnDate = new Map<string, number>()
+  const lastPaidBefore = new Map<string, string>()
+  for (const p of netPayments) {
+    const paidOn = dateIso(p.paid_on)
+    if (paidOn === reportingDate) {
+      collectedOnDate.set(p.loan_id, (collectedOnDate.get(p.loan_id) ?? 0) + centavos(p.amount_centavos))
+    } else if (paidOn < reportingDate) {
+      const existing = lastPaidBefore.get(p.loan_id)
+      if (!existing || paidOn > existing) lastPaidBefore.set(p.loan_id, paidOn)
+    }
+  }
+
+  const rows: UnpaidCollectionRow[] = []
+  for (const l of readyLoans) {
+    if (!dueOn(l, reportingDate)) continue
+    const dueCentavos = Math.min(centavos(l.daily_due_centavos), centavos(l.remaining_centavos))
+    const paidCentavos = collectedOnDate.get(l.id) ?? 0
+    if (paidCentavos >= dueCentavos) continue // paid in full -- not a miss
+
+    // Scheduled (not calendar) days since the last real payment, so a
+    // borrower on a Mon-Fri schedule isn't "3 days missed" over a weekend.
+    // The 6-month payment window bounds the lookback -- if the last actual
+    // payment predates it, `since` floors at the window start rather than
+    // reporting a too-large, unverifiable number.
+    const since = lastPaidBefore.has(l.id) ? addDaysIso(lastPaidBefore.get(l.id)!, 1) : dateIso(l.payment_start_on)
+    const boundedSince = since < paymentWindowStart ? paymentWindowStart : since
+    const daysMissed = collectionDaysBetween(boundedSince, reportingDate, l.collection_weekdays as number[])
+
+    rows.push({
+      loanId: l.id,
+      borrowerDisplayName: l.borrower_display_name,
+      dueCentavos,
+      paidCentavos,
+      remainingCentavos: centavos(l.remaining_centavos),
+      daysMissed,
+      bucket: paidCentavos === 0 ? 'none' : 'short',
+      displayStatus: l.display_status,
+    })
+  }
+  rows.sort((a, b) => a.borrowerDisplayName.localeCompare(b.borrowerDisplayName) || a.loanId.localeCompare(b.loanId))
+
+  return {
+    rows: rows.slice(0, UNPAID_ROW_CAP),
+    noPaymentCount: rows.filter((r) => r.bucket === 'none').length,
+    shortCount: rows.filter((r) => r.bucket === 'short').length,
+  }
 }
 
 function buildSixMonthChart(payments: { paid_on: unknown; amount_centavos: number | string }[], sixMonthsAgo: string) {

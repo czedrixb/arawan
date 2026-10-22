@@ -61,6 +61,10 @@
           <StatTile :label="actualLabel" :value="formatCentavos(overview.collectedOnDateCentavos)" />
         </section>
 
+        <section class="mt-4">
+          <UnpaidList :rows="overview.unpaid.rows" :reporting-date="selectedDate" />
+        </section>
+
         <section class="mt-6">
           <h2 class="mb-2 text-sm font-semibold text-text-primary">Collections, last 6 months</h2>
           <CollectionChart :bars="overview.sixMonthChart" />
